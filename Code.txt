@@ -1,10 +1,24 @@
-Session.Clear();
-Session.Abandon();
-
-if (Request.Cookies["ASP.NET_SessionId"] != null)
+private void LogoutUser()
 {
-    HttpCookie cookie = new HttpCookie("ASP.NET_SessionId");
-    cookie.Expires = DateTime.Now.AddDays(-1);
-    cookie.Value = "";
-    Response.Cookies.Add(cookie);
+    // Clear session values
+    if (Session != null)
+    {
+        Session.Clear();
+        Session.Abandon();
+    }
+
+    // Expire the ASP.NET session cookie
+    if (Request.Cookies["ASP.NET_SessionId"] != null)
+    {
+        HttpCookie cookie = new HttpCookie("ASP.NET_SessionId");
+        cookie.Value = "";
+        cookie.Expires = DateTime.Now.AddDays(-1);
+        cookie.HttpOnly = true;
+
+        Response.Cookies.Add(cookie);
+    }
+
+    // Redirect to login page
+    Response.Redirect("~/login.aspx", false);
+    Context.ApplicationInstance.CompleteRequest();
 }
