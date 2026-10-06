@@ -1,0 +1,10 @@
+Session.Clear();
+Session.Abandon();
+
+if (Request.Cookies["ASP.NET_SessionId"] != null)
+{
+    HttpCookie cookie = new HttpCookie("ASP.NET_SessionId");
+    cookie.Expires = DateTime.Now.AddDays(-1);
+    cookie.Value = "";
+    Response.Cookies.Add(cookie);
+}
