@@ -1,16 +1,44 @@
-Dear Asif,
+<configuration>
 
-The below servers are the UAT servers for the HFLMS application. Our team manages the day-to-day activities, including deployments, debugging, trouble shooting, across the UAT, Development, SIT, and Staging environments.
+  <system.web>
 
-From today, access to these servers has been enforced through PAM.
+    <!-- ASP.NET request processing -->
+    <httpRuntime
+        executionTimeout="300"
+        requestQueueLimit="50"
+        maxConcurrentRequestsPerCPU="12" />
 
-We kindly request your approval to exempt the below servers from PAM access and allow our team to access them directly for the required day-to-day activities.
+    <!-- Session -->
+    <sessionState
+        mode="InProc"
+        timeout="20" />
 
-Regards,
-Hariprasath
+    <!-- Authentication -->
+    <authentication mode="Forms">
+      <forms
+          timeout="20"
+          slidingExpiration="false" />
+    </authentication>
 
-protected void Page_Load(object sender, EventArgs e)
-{
-    System.Threading.Thread.Sleep(60000);
-    Response.Write("Completed");
-}
+    <!-- Compilation -->
+    <compilation
+        debug="false"
+        targetFramework="4.5" />
+
+  </system.web>
+
+  <system.webServer>
+
+    <!-- IIS request limits -->
+    <security>
+      <requestFiltering>
+        <requestLimits maxAllowedContentLength="52428800" />
+      </requestFiltering>
+    </security>
+
+    <!-- Disable IIS response caching for the test application -->
+    <caching enabled="false" />
+
+  </system.webServer>
+
+</configuration>
