@@ -1,44 +1,9 @@
-<configuration>
-
-  <system.web>
-
-    <!-- ASP.NET request processing -->
-    <httpRuntime
-        executionTimeout="300"
-        requestQueueLimit="50"
-        maxConcurrentRequestsPerCPU="12" />
-
-    <!-- Session -->
-    <sessionState
-        mode="InProc"
-        timeout="20" />
-
-    <!-- Authentication -->
-    <authentication mode="Forms">
-      <forms
-          timeout="20"
-          slidingExpiration="false" />
-    </authentication>
-
-    <!-- Compilation -->
-    <compilation
-        debug="false"
-        targetFramework="4.5" />
-
-  </system.web>
-
-  <system.webServer>
-
-    <!-- IIS request limits -->
-    <security>
-      <requestFiltering>
-        <requestLimits maxAllowedContentLength="52428800" />
-      </requestFiltering>
-    </security>
-
-    <!-- Disable IIS response caching for the test application -->
-    <caching enabled="false" />
-
-  </system.webServer>
-
-</configuration>
+DELETE T
+FROM dbo.YourActualTable T
+INNER JOIN
+(
+    SELECT TOP 10000 ID
+    FROM sc
+    WHERE ...
+    ORDER BY CreatedDate
+) X ON X.ID = T.ID;
