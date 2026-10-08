@@ -1,24 +1,7 @@
-private void LogoutUser()
-{
-    // Clear session values
-    if (Session != null)
-    {
-        Session.Clear();
-        Session.Abandon();
-    }
+Dear Asif,
 
-    // Expire the ASP.NET session cookie
-    if (Request.Cookies["ASP.NET_SessionId"] != null)
-    {
-        HttpCookie cookie = new HttpCookie("ASP.NET_SessionId");
-        cookie.Value = "";
-        cookie.Expires = DateTime.Now.AddDays(-1);
-        cookie.HttpOnly = true;
+The below servers are the UAT servers for the HFLMS application. Our team manages the day-to-day activities, including deployments, debugging, trouble shooting, across the UAT, Development, SIT, and Staging environments.
 
-        Response.Cookies.Add(cookie);
-    }
+From today, access to these servers has been enforced through PAM.
 
-    // Redirect to login page
-    Response.Redirect("~/login.aspx", false);
-    Context.ApplicationInstance.CompleteRequest();
-}
+We kindly request your approval to exempt the below servers from PAM access and allow our team to access them directly for the required day-to-day activities.
