@@ -1,9 +1,3 @@
-DELETE T
-FROM dbo.YourActualTable T
-INNER JOIN
-(
-    SELECT TOP 10000 ID
-    FROM sc
-    WHERE ...
-    ORDER BY CreatedDate
-) X ON X.ID = T.ID;
+The requirement also includes splitting `SOA_calllog_core`, which is under discussion with the Platform Owner as it requires code changes.
+
+The archival process is also being enhanced to avoid any performance impact. Development is in progress.
