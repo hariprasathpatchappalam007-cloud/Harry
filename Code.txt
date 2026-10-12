@@ -1,371 +1,364 @@
+<%@ Page Language="C#" AutoEventWireup="true"
+    CodeFile="CustomerScript.aspx.cs"
+    Inherits="CustomerScript" %>
+
+<!DOCTYPE html>
+<html>
+<head runat="server">
+    <title>EDS Customer SQL Generator</title>
+
+    <style type="text/css">
+        body {
+            font-family: Arial;
+            margin: 30px;
+        }
+
+        .container {
+            width: 650px;
+            padding: 20px;
+            border: 1px solid #cccccc;
+        }
+
+        .row {
+            margin-bottom: 15px;
+        }
+
+        .label {
+            display: inline-block;
+            width: 160px;
+            font-weight: bold;
+        }
+
+        .input {
+            width: 350px;
+            padding: 6px;
+        }
+
+        .button {
+            padding: 8px 18px;
+            cursor: pointer;
+        }
+
+        .output {
+            width: 100%;
+            height: 260px;
+            margin-top: 15px;
+            font-family: Consolas, monospace;
+        }
+
+        .hint {
+            color: #666666;
+            font-size: 12px;
+            margin-left: 165px;
+        }
+    </style>
+</head>
+
+<body>
+    <form id="form1" runat="server">
+
+        <div class="container">
+
+            <h2>EDS Customer SQL Generator</h2>
+
+            <div class="row">
+                <span class="label">Customer Name:</span>
+                <asp:TextBox ID="txtCustomerName"
+                    runat="server"
+                    CssClass="input"
+                    MaxLength="200"
+                    placeholder="Enter customer full name" />
+            </div>
+
+            <div class="row">
+                <span class="label">CIF:</span>
+                <asp:TextBox ID="txtCIF"
+                    runat="server"
+                    CssClass="input"
+                    MaxLength="20"
+                    placeholder="Enter CIF number" />
+            </div>
+
+            <div class="row">
+                <span class="label">Emirates ID:</span>
+                <asp:TextBox ID="txtEmiratesID"
+                    runat="server"
+                    CssClass="input"
+                    MaxLength="18"
+                    placeholder="784-YYYY-NNNNNNN-N" />
+            </div>
+
+            <div class="row">
+                <span class="label">Date of Birth:</span>
+                <asp:TextBox ID="txtDOB"
+                    runat="server"
+                    CssClass="input"
+                    MaxLength="10"
+                    placeholder="DD-MM-YYYY" />
+                <div class="hint">Example: 04-01-1976</div>
+            </div>
+
+            <div class="row">
+                <span class="label">Passport No:</span>
+                <asp:TextBox ID="txtPassport"
+                    runat="server"
+                    CssClass="input"
+                    MaxLength="30"
+                    placeholder="Enter passport number" />
+            </div>
+
+            <div class="row">
+                <span class="label">Nationality:</span>
+                <asp:TextBox ID="txtNationality"
+                    runat="server"
+                    CssClass="input"
+                    MaxLength="100"
+                    placeholder="Enter nationality" />
+            </div>
+
+            <div class="row">
+                <span class="label">Mobile No:</span>
+                <asp:TextBox ID="txtMobile"
+                    runat="server"
+                    CssClass="input"
+                    MaxLength="20"
+                    placeholder="00971XXXXXXXXX" />
+            </div>
+
+            <div class="row">
+                <asp:Button ID="btnGenerate"
+                    runat="server"
+                    Text="Generate SQL Script"
+                    CssClass="button"
+                    OnClick="btnGenerate_Click" />
+            </div>
+
+            <div class="row">
+                <asp:Label ID="lblMessage"
+                    runat="server"
+                    ForeColor="Red" />
+            </div>
+
+            <div class="row">
+                <asp:TextBox ID="txtSQL"
+                    runat="server"
+                    TextMode="MultiLine"
+                    CssClass="output"
+                    ReadOnly="true" />
+            </div>
+
+        </div>
+
+    </form>
+</body>
+</html>
+
 using System;
-using System.IO;
-using System.Security.Cryptography;
+using System.Globalization;
 using System.Text;
-using System.Configuration;
-
-public class DocumentSecurity
-{
-    private static byte[] GetEncryptionKey()
-    {
-        string key = ConfigurationManager.AppSettings[
-            "DocumentEncryptionKey"];
-
-        if (String.IsNullOrEmpty(key))
-        {
-            throw new InvalidOperationException(
-                "Document encryption key is not configured.");
-        }
-
-        using (SHA256 sha = SHA256.Create())
-        {
-            return sha.ComputeHash(
-                Encoding.UTF8.GetBytes(key));
-        }
-    }
-
-    public static string EncryptUserId(string userId)
-    {
-        byte[] key = GetEncryptionKey();
-
-        byte[] iv = new byte[16];
-
-        using (RandomNumberGenerator rng =
-            RandomNumberGenerator.Create())
-        {
-            rng.GetBytes(iv);
-        }
-
-        using (Aes aes = Aes.Create())
-        {
-            aes.KeySize = 256;
-            aes.BlockSize = 128;
-            aes.Mode = CipherMode.CBC;
-            aes.Padding = PaddingMode.PKCS7;
-
-            aes.Key = key;
-            aes.IV = iv;
-
-            using (MemoryStream ms = new MemoryStream())
-            {
-                ms.Write(iv, 0, iv.Length);
-
-                using (CryptoStream cs = new CryptoStream(
-                    ms,
-                    aes.CreateEncryptor(),
-                    CryptoStreamMode.Write))
-                {
-                    byte[] data =
-                        Encoding.UTF8.GetBytes(userId);
-
-                    cs.Write(data, 0, data.Length);
-                    cs.FlushFinalBlock();
-                }
-
-                return Convert.ToBase64String(
-                    ms.ToArray())
-                    .TrimEnd('=')
-                    .Replace('+', '-')
-                    .Replace('/', '_');
-            }
-        }
-    }
-
-    public static string DecryptUserId(string encryptedUserId)
-    {
-        byte[] key = GetEncryptionKey();
-
-        string base64 = encryptedUserId
-            .Replace('-', '+')
-            .Replace('_', '/');
-
-        switch (base64.Length % 4)
-        {
-            case 2:
-                base64 += "==";
-                break;
-
-            case 3:
-                base64 += "=";
-                break;
-        }
-
-        byte[] cipherData =
-            Convert.FromBase64String(base64);
-
-        if (cipherData.Length <= 16)
-        {
-            throw new CryptographicException(
-                "Invalid encrypted user identifier.");
-        }
-
-        byte[] iv = new byte[16];
-
-        Buffer.BlockCopy(
-            cipherData, 0, iv, 0, iv.Length);
-
-        byte[] encryptedData =
-            new byte[cipherData.Length - iv.Length];
-
-        Buffer.BlockCopy(
-            cipherData,
-            iv.Length,
-            encryptedData,
-            0,
-            encryptedData.Length);
-
-        using (Aes aes = Aes.Create())
-        {
-            aes.KeySize = 256;
-            aes.BlockSize = 128;
-            aes.Mode = CipherMode.CBC;
-            aes.Padding = PaddingMode.PKCS7;
-
-            aes.Key = key;
-            aes.IV = iv;
-
-            using (MemoryStream ms = new MemoryStream())
-            using (CryptoStream cs = new CryptoStream(
-                ms,
-                aes.CreateDecryptor(),
-                CryptoStreamMode.Write))
-            {
-                cs.Write(
-                    encryptedData,
-                    0,
-                    encryptedData.Length);
-
-                cs.FlushFinalBlock();
-
-                return Encoding.UTF8.GetString(
-                    ms.ToArray());
-            }
-        }
-    }
-
-    public static string GenerateRandomId()
-    {
-        byte[] bytes = new byte[16];
-
-        using (RandomNumberGenerator rng =
-            RandomNumberGenerator.Create())
-        {
-            rng.GetBytes(bytes);
-        }
-
-        return BitConverter.ToString(bytes)
-            .Replace("-", "")
-            .ToLowerInvariant();
-    }
-}
-
--------------
-
-string currentUserId =
-    Convert.ToString(Session["USERID"]);
-
-if (String.IsNullOrWhiteSpace(currentUserId))
-{
-    throw new System.Security.SecurityException(
-        "User session is not available.");
-}
-
-// Encrypt the current user's identity.
-string encryptedUserId =
-    DocumentSecurity.EncryptUserId(currentUserId);
-
-// Generate an unpredictable document identifier.
-string randomId =
-    DocumentSecurity.GenerateRandomId();
-
-// Construct the document filename.
-string extension =
-    PDF_OUTPUT_YN == "Y" ? ".pdf" : ".doc";
-
-string secureFileName =
-    encryptedUserId + "_" + randomId + extension;
-
-// Set the output path to the generated filename.
-_FileName =
-    RQ.getAppSettings("URL") +
-    @"\TEMP\" + secureFileName;
-
----------------
-
-OpenDocument.aspx.cs
-
-
-string currentUserId =
-    Convert.ToString(Session["USERID"]);
-
-if (String.IsNullOrWhiteSpace(currentUserId))
-{
-    Response.StatusCode = 401;
-    Context.ApplicationInstance.CompleteRequest();
-    return;
-}
-
-try
-{
-    string decryptedUserId =
-        DocumentSecurity.DecryptUserId(encryptedUserId);
-
-    if (!String.Equals(
-        decryptedUserId,
-        currentUserId,
-        StringComparison.Ordinal))
-    {
-        Response.StatusCode = 403;
-        Context.ApplicationInstance.CompleteRequest();
-        return;
-    }
-
-    // Authorization succeeded.
-    // Validate the random identifier and extension,
-    // resolve the file inside the protected directory,
-    // and return the document.
-}
-catch (CryptographicException)
-{
-    Response.StatusCode = 403;
-    Context.ApplicationInstance.CompleteRequest();
-    return;
-}
-catch (FormatException)
-{
-    Response.StatusCode = 403;
-    Context.ApplicationInstance.CompleteRequest();
-    return;
-}
-
-
----------------
-
-using System;
-using System.IO;
-using System.Web;
+using System.Text.RegularExpressions;
 using System.Web.UI;
 
-public partial class OpenDocument : System.Web.UI.Page
+public partial class CustomerScript : Page
 {
-    protected void Page_Load(object sender, EventArgs e)
+    protected void btnGenerate_Click(object sender, EventArgs e)
     {
-        try
+        lblMessage.Text = "";
+        txtSQL.Text = "";
+
+        string customerName = txtCustomerName.Text.Trim();
+        string cif = txtCIF.Text.Trim();
+        string emiratesID = txtEmiratesID.Text.Trim();
+        string dobInput = txtDOB.Text.Trim();
+        string passport = txtPassport.Text.Trim();
+        string nationality = txtNationality.Text.Trim();
+        string mobile = txtMobile.Text.Trim();
+
+        // Validate mandatory fields.
+        if (customerName == "" || cif == "" ||
+            emiratesID == "" || dobInput == "" ||
+            passport == "" || nationality == "" ||
+            mobile == "")
         {
-            // 1. Validate the HFLMS session.
-            if (Session["USERID"] == null ||
-                String.IsNullOrWhiteSpace(
-                    Convert.ToString(Session["USERID"])))
-            {
-                DenyAccess(401);
-                return;
-            }
-
-            string currentUserId =
-                Convert.ToString(Session["USERID"]).Trim();
-
-            // 2. Get the unpredictable document ID.
-            string documentId = Request.QueryString["doc"];
-
-            if (String.IsNullOrWhiteSpace(documentId) ||
-                documentId.Length != 64)
-            {
-                DenyAccess(400);
-                return;
-            }
-
-            // 3. Validate identifier format.
-            foreach (char c in documentId)
-            {
-                if (!((c >= '0' && c <= '9') ||
-                      (c >= 'a' && c <= 'f')))
-                {
-                    DenyAccess(400);
-                    return;
-                }
-            }
-
-            // 4. Authorize the current user against the database.
-            string storedFileName =
-                DocumentSecurity.GetAuthorizedFile(
-                    documentId,
-                    currentUserId);
-
-            if (String.IsNullOrEmpty(storedFileName))
-            {
-                DenyAccess(403);
-                return;
-            }
-
-            // 5. Resolve the file only inside protected storage.
-            string documentDirectory =
-                Server.MapPath("~/App_Data/HFLMSDocuments/");
-
-            string fullPath =
-                Path.Combine(documentDirectory, storedFileName);
-
-            if (!File.Exists(fullPath))
-            {
-                DenyAccess(404);
-                return;
-            }
-
-            // 6. Determine content type.
-            string extension =
-                Path.GetExtension(storedFileName);
-
-            string contentType;
-
-            if (extension.Equals(
-                ".pdf", StringComparison.OrdinalIgnoreCase))
-            {
-                contentType = "application/pdf";
-            }
-            else if (extension.Equals(
-                ".doc", StringComparison.OrdinalIgnoreCase))
-            {
-                contentType = "application/msword";
-            }
-            else
-            {
-                DenyAccess(403);
-                return;
-            }
-
-            // 7. Return the authorized document.
-            Response.Clear();
-            Response.Buffer = true;
-            Response.ContentType = contentType;
-
-            Response.AddHeader(
-                "Content-Disposition",
-                "inline; filename=\"" +
-                storedFileName + "\"");
-
-            Response.Cache.SetCacheability(
-                HttpCacheability.NoCache);
-
-            Response.Cache.SetNoStore();
-
-            Response.TransmitFile(fullPath);
-
-            Context.ApplicationInstance.CompleteRequest();
+            lblMessage.Text = "Please enter all customer details.";
+            return;
         }
-        catch (Exception ex)
+
+        // Validate CIF.
+        if (!Regex.IsMatch(cif, @"^[0-9]+$"))
         {
-            // Log the exception using your existing HFLMS logger.
-            // Do not expose internal paths or exception details.
-            DenyAccess(500);
+            lblMessage.Text = "CIF must contain digits only.";
+            return;
         }
+
+        // Validate and standardize Emirates ID.
+        string emiratesIDStandard =
+            emiratesID.Replace("-", "").Replace(" ", "");
+
+        if (!Regex.IsMatch(emiratesID, @"^784-\d{4}-\d{7}-\d$") ||
+            !Regex.IsMatch(emiratesIDStandard, @"^784\d{12}$"))
+        {
+            lblMessage.Text =
+                "Invalid Emirates ID. Expected format: 784-YYYY-NNNNNNN-N.";
+            return;
+        }
+
+        // Validate date of birth.
+        DateTime dob;
+
+        if (!DateTime.TryParseExact(
+            dobInput,
+            "dd-MM-yyyy",
+            CultureInfo.InvariantCulture,
+            DateTimeStyles.None,
+            out dob))
+        {
+            lblMessage.Text =
+                "Invalid date of birth. Use DD-MM-YYYY format.";
+            return;
+        }
+
+        // Standardized date of birth.
+        string dobStandard =
+            dob.ToString("dd MMMM yyyy",
+            CultureInfo.InvariantCulture).ToUpperInvariant();
+
+        // Validate mobile number.
+        if (!Regex.IsMatch(mobile, @"^[0-9]{7,20}$"))
+        {
+            lblMessage.Text =
+                "Mobile number must contain digits only.";
+            return;
+        }
+
+        // Validate passport number.
+        if (!Regex.IsMatch(passport, @"^[A-Za-z0-9]+$"))
+        {
+            lblMessage.Text =
+                "Passport number must contain letters and digits only.";
+            return;
+        }
+
+        // Validate customer name.
+        if (customerName.Length > 200 ||
+            Regex.IsMatch(customerName, @"[\x00-\x1F]"))
+        {
+            lblMessage.Text = "Invalid customer name.";
+            return;
+        }
+
+        // Validate nationality.
+        if (nationality.Length > 100 ||
+            Regex.IsMatch(nationality, @"[\x00-\x1F]"))
+        {
+            lblMessage.Text = "Invalid nationality.";
+            return;
+        }
+
+        // Escape single quotes for SQL string literals.
+        string nameSQL = EscapeSQL(customerName);
+        string cifSQL = EscapeSQL(cif);
+        string eidSQL = EscapeSQL(emiratesID);
+        string eidStandardSQL = EscapeSQL(emiratesIDStandard);
+        string dobStandardSQL = EscapeSQL(dobStandard);
+        string passportSQL = EscapeSQL(passport);
+        string nationalitySQL = EscapeSQL(nationality);
+        string mobileSQL = EscapeSQL(mobile);
+
+        // Generate INSERT statement.
+        StringBuilder sql = new StringBuilder();
+
+        sql.AppendLine("INSERT INTO EDSUSER.EDS_CUSTOMER_TABLE");
+        sql.AppendLine("(");
+        sql.AppendLine("    CUSTOMER_FULL_NAME,");
+        sql.AppendLine("    CUSTOMER_FULL_NAME_STND,");
+        sql.AppendLine("    CUSTOMER_FULL_NAME_STND_ORG,");
+        sql.AppendLine("    CIF_NO,");
+        sql.AppendLine("    CIF_NO_STND,");
+        sql.AppendLine("    EMIRATESID_NO,");
+        sql.AppendLine("    EMIRATESID_NO_STND,");
+        sql.AppendLine("    DATE_OF_BIRTH,");
+        sql.AppendLine("    DATE_OF_BIRTH_STND,");
+        sql.AppendLine("    PASSPORT_NO,");
+        sql.AppendLine("    PASSPORT_NO_STND,");
+        sql.AppendLine("    NATIONALITY,");
+        sql.AppendLine("    NATIONALITY_STND,");
+        sql.AppendLine("    MOBILE,");
+        sql.AppendLine("    MOBILE_STND,");
+        sql.AppendLine("    CLUSTERID");
+        sql.AppendLine(")");
+        sql.AppendLine("VALUES");
+        sql.AppendLine("(");
+        sql.AppendLine("    '" + nameSQL + "',");
+        sql.AppendLine("    '" + nameSQL + "',");
+        sql.AppendLine("    '" + nameSQL + "',");
+        sql.AppendLine("    '" + cifSQL + "',");
+        sql.AppendLine("    '" + cifSQL + "',");
+        sql.AppendLine("    '" + eidSQL + "',");
+        sql.AppendLine("    '" + eidStandardSQL + "',");
+        sql.AppendLine("    TIMESTAMP '" +
+            dob.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) +
+            " 00:00:00.000000',");
+        sql.AppendLine("    '" + dobStandardSQL + "',");
+        sql.AppendLine("    '" + passportSQL + "',");
+        sql.AppendLine("    '" + passportSQL + "',");
+        sql.AppendLine("    '" + nationalitySQL + "',");
+        sql.AppendLine("    '" + nationalitySQL + "',");
+        sql.AppendLine("    '" + mobileSQL + "',");
+        sql.AppendLine("    '" + mobileSQL + "',");
+        sql.AppendLine("    " + cif);
+        sql.AppendLine(");");
+
+        txtSQL.Text = sql.ToString();
+
+        lblMessage.ForeColor =
+            System.Drawing.Color.Green;
+
+        lblMessage.Text = "SQL script generated successfully.";
     }
 
-    private void DenyAccess(int statusCode)
+    private string EscapeSQL(string value)
     {
-        Response.Clear();
-        Response.StatusCode = statusCode;
-        Response.TrySkipIisCustomErrors = true;
-        Response.SuppressContent = true;
-
-        Context.ApplicationInstance.CompleteRequest();
+        return value.Replace("'", "''");
     }
 }
+
+INSERT INTO EDSUSER.EDS_CUSTOMER_TABLE
+(
+    CUSTOMER_FULL_NAME,
+    CUSTOMER_FULL_NAME_STND,
+    CUSTOMER_FULL_NAME_STND_ORG,
+    CIF_NO,
+    CIF_NO_STND,
+    EMIRATESID_NO,
+    EMIRATESID_NO_STND,
+    DATE_OF_BIRTH,
+    DATE_OF_BIRTH_STND,
+    PASSPORT_NO,
+    PASSPORT_NO_STND,
+    NATIONALITY,
+    NATIONALITY_STND,
+    MOBILE,
+    MOBILE_STND,
+    CLUSTERID
+)
+VALUES
+(
+    'Jesse Beale',
+    'Jesse Beale',
+    'Jesse Beale',
+    '6696678',
+    '6696678',
+    '784-1976-6696678-4',
+    '784197666966784',
+    TIMESTAMP '1976-01-04 00:00:00.000000',
+    '04 JANUARY 1976',
+    'DL8869298',
+    'DL8869298',
+    'Pakistan',
+    'Pakistan',
+    '00971582063187',
+    '00971582063187',
+    6696678
+);
+
