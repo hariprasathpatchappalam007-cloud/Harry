@@ -1,3 +1,371 @@
-The requirement also includes splitting `SOA_calllog_core`, which is under discussion with the Platform Owner as it requires code changes.
+using System;
+using System.IO;
+using System.Security.Cryptography;
+using System.Text;
+using System.Configuration;
 
-The archival process is also being enhanced to avoid any performance impact. Development is in progress.
+public class DocumentSecurity
+{
+    private static byte[] GetEncryptionKey()
+    {
+        string key = ConfigurationManager.AppSettings[
+            "DocumentEncryptionKey"];
+
+        if (String.IsNullOrEmpty(key))
+        {
+            throw new InvalidOperationException(
+                "Document encryption key is not configured.");
+        }
+
+        using (SHA256 sha = SHA256.Create())
+        {
+            return sha.ComputeHash(
+                Encoding.UTF8.GetBytes(key));
+        }
+    }
+
+    public static string EncryptUserId(string userId)
+    {
+        byte[] key = GetEncryptionKey();
+
+        byte[] iv = new byte[16];
+
+        using (RandomNumberGenerator rng =
+            RandomNumberGenerator.Create())
+        {
+            rng.GetBytes(iv);
+        }
+
+        using (Aes aes = Aes.Create())
+        {
+            aes.KeySize = 256;
+            aes.BlockSize = 128;
+            aes.Mode = CipherMode.CBC;
+            aes.Padding = PaddingMode.PKCS7;
+
+            aes.Key = key;
+            aes.IV = iv;
+
+            using (MemoryStream ms = new MemoryStream())
+            {
+                ms.Write(iv, 0, iv.Length);
+
+                using (CryptoStream cs = new CryptoStream(
+                    ms,
+                    aes.CreateEncryptor(),
+                    CryptoStreamMode.Write))
+                {
+                    byte[] data =
+                        Encoding.UTF8.GetBytes(userId);
+
+                    cs.Write(data, 0, data.Length);
+                    cs.FlushFinalBlock();
+                }
+
+                return Convert.ToBase64String(
+                    ms.ToArray())
+                    .TrimEnd('=')
+                    .Replace('+', '-')
+                    .Replace('/', '_');
+            }
+        }
+    }
+
+    public static string DecryptUserId(string encryptedUserId)
+    {
+        byte[] key = GetEncryptionKey();
+
+        string base64 = encryptedUserId
+            .Replace('-', '+')
+            .Replace('_', '/');
+
+        switch (base64.Length % 4)
+        {
+            case 2:
+                base64 += "==";
+                break;
+
+            case 3:
+                base64 += "=";
+                break;
+        }
+
+        byte[] cipherData =
+            Convert.FromBase64String(base64);
+
+        if (cipherData.Length <= 16)
+        {
+            throw new CryptographicException(
+                "Invalid encrypted user identifier.");
+        }
+
+        byte[] iv = new byte[16];
+
+        Buffer.BlockCopy(
+            cipherData, 0, iv, 0, iv.Length);
+
+        byte[] encryptedData =
+            new byte[cipherData.Length - iv.Length];
+
+        Buffer.BlockCopy(
+            cipherData,
+            iv.Length,
+            encryptedData,
+            0,
+            encryptedData.Length);
+
+        using (Aes aes = Aes.Create())
+        {
+            aes.KeySize = 256;
+            aes.BlockSize = 128;
+            aes.Mode = CipherMode.CBC;
+            aes.Padding = PaddingMode.PKCS7;
+
+            aes.Key = key;
+            aes.IV = iv;
+
+            using (MemoryStream ms = new MemoryStream())
+            using (CryptoStream cs = new CryptoStream(
+                ms,
+                aes.CreateDecryptor(),
+                CryptoStreamMode.Write))
+            {
+                cs.Write(
+                    encryptedData,
+                    0,
+                    encryptedData.Length);
+
+                cs.FlushFinalBlock();
+
+                return Encoding.UTF8.GetString(
+                    ms.ToArray());
+            }
+        }
+    }
+
+    public static string GenerateRandomId()
+    {
+        byte[] bytes = new byte[16];
+
+        using (RandomNumberGenerator rng =
+            RandomNumberGenerator.Create())
+        {
+            rng.GetBytes(bytes);
+        }
+
+        return BitConverter.ToString(bytes)
+            .Replace("-", "")
+            .ToLowerInvariant();
+    }
+}
+
+-------------
+
+string currentUserId =
+    Convert.ToString(Session["USERID"]);
+
+if (String.IsNullOrWhiteSpace(currentUserId))
+{
+    throw new System.Security.SecurityException(
+        "User session is not available.");
+}
+
+// Encrypt the current user's identity.
+string encryptedUserId =
+    DocumentSecurity.EncryptUserId(currentUserId);
+
+// Generate an unpredictable document identifier.
+string randomId =
+    DocumentSecurity.GenerateRandomId();
+
+// Construct the document filename.
+string extension =
+    PDF_OUTPUT_YN == "Y" ? ".pdf" : ".doc";
+
+string secureFileName =
+    encryptedUserId + "_" + randomId + extension;
+
+// Set the output path to the generated filename.
+_FileName =
+    RQ.getAppSettings("URL") +
+    @"\TEMP\" + secureFileName;
+
+---------------
+
+OpenDocument.aspx.cs
+
+
+string currentUserId =
+    Convert.ToString(Session["USERID"]);
+
+if (String.IsNullOrWhiteSpace(currentUserId))
+{
+    Response.StatusCode = 401;
+    Context.ApplicationInstance.CompleteRequest();
+    return;
+}
+
+try
+{
+    string decryptedUserId =
+        DocumentSecurity.DecryptUserId(encryptedUserId);
+
+    if (!String.Equals(
+        decryptedUserId,
+        currentUserId,
+        StringComparison.Ordinal))
+    {
+        Response.StatusCode = 403;
+        Context.ApplicationInstance.CompleteRequest();
+        return;
+    }
+
+    // Authorization succeeded.
+    // Validate the random identifier and extension,
+    // resolve the file inside the protected directory,
+    // and return the document.
+}
+catch (CryptographicException)
+{
+    Response.StatusCode = 403;
+    Context.ApplicationInstance.CompleteRequest();
+    return;
+}
+catch (FormatException)
+{
+    Response.StatusCode = 403;
+    Context.ApplicationInstance.CompleteRequest();
+    return;
+}
+
+
+---------------
+
+using System;
+using System.IO;
+using System.Web;
+using System.Web.UI;
+
+public partial class OpenDocument : System.Web.UI.Page
+{
+    protected void Page_Load(object sender, EventArgs e)
+    {
+        try
+        {
+            // 1. Validate the HFLMS session.
+            if (Session["USERID"] == null ||
+                String.IsNullOrWhiteSpace(
+                    Convert.ToString(Session["USERID"])))
+            {
+                DenyAccess(401);
+                return;
+            }
+
+            string currentUserId =
+                Convert.ToString(Session["USERID"]).Trim();
+
+            // 2. Get the unpredictable document ID.
+            string documentId = Request.QueryString["doc"];
+
+            if (String.IsNullOrWhiteSpace(documentId) ||
+                documentId.Length != 64)
+            {
+                DenyAccess(400);
+                return;
+            }
+
+            // 3. Validate identifier format.
+            foreach (char c in documentId)
+            {
+                if (!((c >= '0' && c <= '9') ||
+                      (c >= 'a' && c <= 'f')))
+                {
+                    DenyAccess(400);
+                    return;
+                }
+            }
+
+            // 4. Authorize the current user against the database.
+            string storedFileName =
+                DocumentSecurity.GetAuthorizedFile(
+                    documentId,
+                    currentUserId);
+
+            if (String.IsNullOrEmpty(storedFileName))
+            {
+                DenyAccess(403);
+                return;
+            }
+
+            // 5. Resolve the file only inside protected storage.
+            string documentDirectory =
+                Server.MapPath("~/App_Data/HFLMSDocuments/");
+
+            string fullPath =
+                Path.Combine(documentDirectory, storedFileName);
+
+            if (!File.Exists(fullPath))
+            {
+                DenyAccess(404);
+                return;
+            }
+
+            // 6. Determine content type.
+            string extension =
+                Path.GetExtension(storedFileName);
+
+            string contentType;
+
+            if (extension.Equals(
+                ".pdf", StringComparison.OrdinalIgnoreCase))
+            {
+                contentType = "application/pdf";
+            }
+            else if (extension.Equals(
+                ".doc", StringComparison.OrdinalIgnoreCase))
+            {
+                contentType = "application/msword";
+            }
+            else
+            {
+                DenyAccess(403);
+                return;
+            }
+
+            // 7. Return the authorized document.
+            Response.Clear();
+            Response.Buffer = true;
+            Response.ContentType = contentType;
+
+            Response.AddHeader(
+                "Content-Disposition",
+                "inline; filename=\"" +
+                storedFileName + "\"");
+
+            Response.Cache.SetCacheability(
+                HttpCacheability.NoCache);
+
+            Response.Cache.SetNoStore();
+
+            Response.TransmitFile(fullPath);
+
+            Context.ApplicationInstance.CompleteRequest();
+        }
+        catch (Exception ex)
+        {
+            // Log the exception using your existing HFLMS logger.
+            // Do not expose internal paths or exception details.
+            DenyAccess(500);
+        }
+    }
+
+    private void DenyAccess(int statusCode)
+    {
+        Response.Clear();
+        Response.StatusCode = statusCode;
+        Response.TrySkipIisCustomErrors = true;
+        Response.SuppressContent = true;
+
+        Context.ApplicationInstance.CompleteRequest();
+    }
+}
