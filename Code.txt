@@ -1,11 +1,5 @@
-Dear Wajahat,
+Dear Saumitra,
 
-We are planning to release the DMGT-443 DDA Cancellation project this weekend.
+The below statement is not applicable to HFLMS, as closed CIF deduplication scenarios are handled directly at the T24 layer.
 
-As part of the implementation, the ETL team will synchronise data from DDS to HFLMS using the NETEZZA account, targeting the newly created `DDS_DataSync` table.
-
-To support the ETL deployment and ensure the functionality works as expected, we require **INSERT, UPDATE, DELETE, SELECT, and TRUNCATE permissions** for the NETEZZA account on this specific table.
-
-Kindly provide GIS approval to grant the above permissions to the NETEZZA account for the `DDS_DataSync` table.
-
-Regards,
+The EA document is attached for your reference. It clearly confirms that no changes are required in HFLMS and only support is needed.
