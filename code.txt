@@ -1,0 +1,8 @@
+USE DFM;
+
+SELECT CASE
+    WHEN OBJECT_DEFINITION(OBJECT_ID(N'dbo.sp_SaveBudgetLine'))
+         LIKE N'%Pending Approval%'
+    THEN 'PASS'
+    ELSE 'FAIL: workflow missing or definition not visible'
+END AS Migration012Check;
