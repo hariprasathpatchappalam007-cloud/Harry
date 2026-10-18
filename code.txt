@@ -1,13 +1,4 @@
-USE DFM;
-
-SELECT
-    @@SERVERNAME AS ConnectedServer,
-    DB_NAME() AS ConnectedDatabase,
-    ORIGINAL_LOGIN() AS ConnectedLogin,
-    OBJECT_ID(N'dbo.sp_SaveBudgetLine', N'P') AS ProcedureId,
-    HAS_PERMS_BY_NAME(
-        N'dbo.sp_SaveBudgetLine', N'OBJECT', N'VIEW DEFINITION'
-    ) AS CanViewDefinition,
-    OBJECT_DEFINITION(
-        OBJECT_ID(N'dbo.sp_SaveBudgetLine', N'P')
-    ) AS ProcedureDefinition;
+Get-ChildItem Cert:\LocalMachine\My |
+Select-Object FriendlyName,Subject,Issuer,NotBefore,NotAfter,HasPrivateKey,Thumbprint,
+@{Name='DNSNames';Expression={$_.DnsNameList.Unicode -join ', '}} |
+Format-List
