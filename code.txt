@@ -1,18 +1,3 @@
-$scriptPath = Join-Path $env:USERPROFILE 'Downloads\Test-CoworkerCertificate.ps1'
-$reportPath = Join-Path $env:USERPROFILE 'Downloads\Coworker-Certificate-Report.txt'
-$powershellPath = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
+Get-ExecutionPolicy
 
-& $powershellPath -NoProfile -File $scriptPath 2>&1 |
-    Tee-Object -FilePath $reportPath
-
-Get-Item -LiteralPath $scriptPath |
-    Format-List FullName, Name, Extension, Length, Attributes
-
-$PSVersionTable
-$Host.Name
-$ExecutionContext.SessionState.LanguageMode
-
-'Allowed script paths in this session:'
-$ExecutionContext.SessionState.Scripts
-
-Get-ExecutionPolicy -List
+& "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -File "$env:USERPROFILE\Downloads\Test-CoworkerCertificate.ps1" 2>&1 | Out-String -Width 240
