@@ -1,11 +1,18 @@
-Get-ChildItem "$env:USERPROFILE\Downloads" -Filter "*CoworkerCertificate*" |
-    Select-Object Name, FullName
+$scriptPath = Join-Path $env:USERPROFILE 'Downloads\Test-CoworkerCertificate.ps1'
+$reportPath = Join-Path $env:USERPROFILE 'Downloads\Coworker-Certificate-Report.txt'
+$powershellPath = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
 
-$script = Join-Path $env:USERPROFILE 'Downloads\Test-CoworkerCertificate.ps1'
-$report = Join-Path $env:USERPROFILE 'Downloads\Coworker-Certificate-Report.txt'
+& $powershellPath -NoProfile -File $scriptPath 2>&1 |
+    Tee-Object -FilePath $reportPath
 
-if (-not (Test-Path -LiteralPath $script -PathType Leaf)) {
-    throw "Script has not been copied to this PC: $script"
-}
+Get-Item -LiteralPath $scriptPath |
+    Format-List FullName, Name, Extension, Length, Attributes
 
-& $script | Tee-Object -FilePath $report
+$PSVersionTable
+$Host.Name
+$ExecutionContext.SessionState.LanguageMode
+
+'Allowed script paths in this session:'
+$ExecutionContext.SessionState.Scripts
+
+Get-ExecutionPolicy -List
