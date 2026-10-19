@@ -1,1 +1,7 @@
-curl.exe -I --connect-timeout 10 --max-time 20 https://dxb01-vwu-afna1.dibuat.ae/
+<div id="dfm-script-check">
+  HTML loaded. JavaScript has NOT executed.
+</div>
+<script>
+document.getElementById('dfm-script-check').textContent =
+  'HTML and JavaScript both executed successfully.';
+</script>
