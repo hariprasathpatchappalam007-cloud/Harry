@@ -1,9 +1,4 @@
-$folder = 'C:\Users\hariprasath.p\Downloads\cet-falconusr\CETFalcon-Users'
+Set-Location "$env:USERPROFILE\Downloads"
 
-$script = Get-Item -LiteralPath "$folder\Get-PublicCertificateReport.ps1" -ErrorAction Stop
-$cert = Get-Item -LiteralPath "$folder\CETMomentum_FQDN_Https.cer" -ErrorAction Stop
-
-& $script.FullName -CertificatePath $cert.FullName |
-    Out-File -LiteralPath "$folder\fqdn_https-report.txt" -Encoding utf8 -Width 240
-
-notepad.exe "$folder\fqdn_https-report.txt"
+& ".\Test-CoworkerCertificate.ps1" |
+    Tee-Object -FilePath ".\Coworker-Certificate-Report.txt"
