@@ -1,4 +1,11 @@
-Set-Location "$env:USERPROFILE\Downloads"
+Get-ChildItem "$env:USERPROFILE\Downloads" -Filter "*CoworkerCertificate*" |
+    Select-Object Name, FullName
 
-& ".\Test-CoworkerCertificate.ps1" |
-    Tee-Object -FilePath ".\Coworker-Certificate-Report.txt"
+$script = Join-Path $env:USERPROFILE 'Downloads\Test-CoworkerCertificate.ps1'
+$report = Join-Path $env:USERPROFILE 'Downloads\Coworker-Certificate-Report.txt'
+
+if (-not (Test-Path -LiteralPath $script -PathType Leaf)) {
+    throw "Script has not been copied to this PC: $script"
+}
+
+& $script | Tee-Object -FilePath $report
