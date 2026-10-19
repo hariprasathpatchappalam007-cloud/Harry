@@ -755,7 +755,7 @@ window.DFM_CONFLUENCE_CONFIG = {
   function esc(value) {
     if (value === null || value === undefined) return '';
     return String(value).replace(/[&<>"'`=]/g, function (c) {
-      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;', '`': '&#96;', '=': '&#61;' }[c];
+      return String.fromCharCode(38, 35) + c.charCodeAt(0) + String.fromCharCode(59);
     });
   }
   function isBlank(v) { return v === null || v === undefined || String(v).trim() === ''; }
