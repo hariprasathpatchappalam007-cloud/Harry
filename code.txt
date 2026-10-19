@@ -1,7 +1,5 @@
-<div id="dfm-script-check">
-  HTML loaded. JavaScript has NOT executed.
-</div>
-<script>
-document.getElementById('dfm-script-check').textContent =
-  'HTML and JavaScript both executed successfully.';
-</script>
+({
+  actualOrigin: location.origin,
+  configuredBaseUrl: window.DFM_CONFLUENCE_CONFIG?.baseUrl,
+  insideIframe: window.self !== window.top
+})
