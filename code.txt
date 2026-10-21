@@ -1,4 +1,4 @@
-
+```sql
 SELECT
     DB_NAME() AS DatabaseName,
     o.type_desc AS ObjectType,
@@ -9,36 +9,37 @@ FROM sys.sql_modules m
 INNER JOIN sys.objects o
     ON m.object_id = o.object_id
 WHERE
-       m.definition LIKE '%LEAD_DSR%'
-    OR m.definition LIKE '%LEAD_DETAILS_FINANCE%'
-ORDER BY
-    o.type_desc,
-    o.name;
-
-
-
-
-SELECT
-    DB_NAME() AS DatabaseName,
-    o.type_desc AS ObjectType,
-    SCHEMA_NAME(o.schema_id) AS SchemaName,
-    o.name AS ObjectName,
-    m.definition AS SQLDefinition
-FROM sys.sql_modules m
-INNER JOIN sys.objects o
-    ON m.object_id = o.object_id
-WHERE
-    (
-           m.definition LIKE '%LEAD_DSR%'
-        OR m.definition LIKE '%LEAD_DETAILS_FINANCE%'
-    )
-    AND
-    (
-           m.definition LIKE '%INSERT%'
+    m.definition LIKE '%LEAD_DSR%'
+    AND m.definition LIKE '%LEAD_DETAILS_FINANCE%'
+    AND (
+        m.definition LIKE '%INSERT%'
         OR m.definition LIKE '%UPDATE%'
-        OR m.definition LIKE '%DELETE%'
-        OR m.definition LIKE '%MERGE%'
     )
 ORDER BY
     o.type_desc,
     o.name;
+```
+----------
+
+```sql
+SELECT
+    DB_NAME() AS DatabaseName,
+    OBJECT_SCHEMA_NAME(m.object_id) AS SchemaName,
+    OBJECT_NAME(m.object_id) AS ObjectName,
+    CASE
+        WHEN m.definition LIKE '%LEAD_DSR%' THEN 'LEAD_DSR'
+    END AS DSR_Reference,
+    CASE
+        WHEN m.definition LIKE '%LEAD_DETAILS_FINANCE%' THEN 'LEAD_DETAILS_FINANCE'
+    END AS Table_Reference,
+    m.definition AS SQLDefinition
+FROM sys.sql_modules m
+WHERE
+    m.definition LIKE '%LEAD_DSR%'
+    AND m.definition LIKE '%LEAD_DETAILS_FINANCE%'
+    AND (
+        m.definition LIKE '%INSERT%'
+        OR m.definition LIKE '%UPDATE%'
+    )
+ORDER BY ObjectName;
+```
