@@ -228,6 +228,7 @@
     fill: #1769aa;
     font-size: 15px;
     font-weight: 600;
+    text-anchor: middle;
   }
 
   .hflms-doc .node {
@@ -692,17 +693,11 @@
     <section class="section-card">
       <div class="section-heading">
         <span class="section-number">4</span>
-        <h2>Implementation considerations</h2>
+        <h2>Note</h2>
       </div>
       <ul>
-        <li>Confirm that the Citrix service group can target each hosting instance and that health checks reflect the hosting's actual ability to serve requests.</li>
-        <li>Document the IIS bindings, ports, certificates, application configuration, and deployment steps for each additional hosting.</li>
-        <li>Validate session/state handling and any shared dependencies before distributing requests across more hosting instances.</li>
-        <li>Load-test the selected option and monitor per-hosting availability, HTTP 503 responses, IIS worker processes, memory, and server health.</li>
-        <li>Agree on the selection between the two options based on capacity, availability targets, infrastructure cost, and operational support.</li>
+        <li>The SMS server is currently underutilized. Hence, Option 2 proposes repurposing it as an application server.</li>
       </ul>
     </section>
-
-    <div class="doc-footer">Architecture diagrams are vector SVG drawings with labeled server nodes and directional connections.</div>
   </div>
 </div>
