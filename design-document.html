@@ -27,6 +27,11 @@
       font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
     }
 
+    .container {
+      max-width: 100% !important;
+      width: 100%;
+    }
+
     .hero {
       background: linear-gradient(120deg, #102a43, #1769aa);
       color: #fff;
@@ -306,8 +311,8 @@
       </div>
       <p class="text-secondary">
         Two IIS application servers host two application hosting instances in total. Traffic to the
-        application servers is load balanced. Notification, SMS, and database functions each have a
-        dedicated server.
+        application servers is load balanced. Notification has two dedicated servers; SMS and database
+        functions each have one dedicated server.
       </p>
       <div class="architecture-card">
         <div class="architecture-header">
@@ -351,21 +356,28 @@
           </div>
           <div class="flow"><i class="bi bi-arrow-down" aria-hidden="true"></i></div>
           <div class="row g-3">
-            <div class="col-md-4">
+            <div class="col-md-3">
               <div class="node service">
                 <i class="bi bi-bell node-icon text-info" aria-hidden="true"></i>
-                <span class="node-title">Notification Server</span>
-                <span class="node-caption">1 server</span>
+                <span class="node-title">Notification Server 1</span>
+                <span class="node-caption">1 of 2 servers</span>
               </div>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-3">
+              <div class="node service">
+                <i class="bi bi-bell node-icon text-info" aria-hidden="true"></i>
+                <span class="node-title">Notification Server 2</span>
+                <span class="node-caption">2 of 2 servers</span>
+              </div>
+            </div>
+            <div class="col-md-3">
               <div class="node service">
                 <i class="bi bi-chat-dots node-icon text-info" aria-hidden="true"></i>
                 <span class="node-title">SMS Server</span>
                 <span class="node-caption">1 server</span>
               </div>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-3">
               <div class="node db">
                 <i class="bi bi-database node-icon text-secondary" aria-hidden="true"></i>
                 <span class="node-title">Database Server</span>

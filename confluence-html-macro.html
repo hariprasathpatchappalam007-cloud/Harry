@@ -354,8 +354,8 @@
       </div>
       <p class="muted">
         Two IIS application servers host two application hosting instances in total. Traffic to the
-        application servers is load balanced. Notification, SMS, and database functions each have a
-        dedicated server.
+        application servers is load balanced. Notification has two dedicated servers; SMS and database
+        functions each have one dedicated server.
       </p>
       <div class="architecture-card">
         <div class="architecture-header">
@@ -389,8 +389,13 @@
           <div class="service-row">
             <div class="node service">
               <i class="bi bi-bell node-icon" aria-hidden="true"></i>
-              <span class="node-title">Notification Server</span>
-              <span class="node-caption">1 server</span>
+              <span class="node-title">Notification Server 1</span>
+              <span class="node-caption">1 of 2 servers</span>
+            </div>
+            <div class="node service">
+              <i class="bi bi-bell node-icon" aria-hidden="true"></i>
+              <span class="node-title">Notification Server 2</span>
+              <span class="node-caption">2 of 2 servers</span>
             </div>
             <div class="node service">
               <i class="bi bi-chat-dots node-icon" aria-hidden="true"></i>
