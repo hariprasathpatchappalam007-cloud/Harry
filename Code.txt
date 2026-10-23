@@ -1,5 +1,0 @@
-Dear Saumitra,
-
-The below statement is not applicable to HFLMS, as closed CIF deduplication scenarios are handled directly at the T24 layer.
-
-The EA document is attached for your reference. It clearly confirms that no changes are required in HFLMS and only support is needed.
