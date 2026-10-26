@@ -1,45 +1,9 @@
-```sql
-SELECT
-    DB_NAME() AS DatabaseName,
-    o.type_desc AS ObjectType,
-    SCHEMA_NAME(o.schema_id) AS SchemaName,
-    o.name AS ObjectName,
-    m.definition AS SQLDefinition
-FROM sys.sql_modules m
-INNER JOIN sys.objects o
-    ON m.object_id = o.object_id
-WHERE
-    m.definition LIKE '%LEAD_DSR%'
-    AND m.definition LIKE '%LEAD_DETAILS_FINANCE%'
-    AND (
-        m.definition LIKE '%INSERT%'
-        OR m.definition LIKE '%UPDATE%'
-    )
-ORDER BY
-    o.type_desc,
-    o.name;
-```
-----------
+Dear Ajay,
 
-```sql
-SELECT
-    DB_NAME() AS DatabaseName,
-    OBJECT_SCHEMA_NAME(m.object_id) AS SchemaName,
-    OBJECT_NAME(m.object_id) AS ObjectName,
-    CASE
-        WHEN m.definition LIKE '%LEAD_DSR%' THEN 'LEAD_DSR'
-    END AS DSR_Reference,
-    CASE
-        WHEN m.definition LIKE '%LEAD_DETAILS_FINANCE%' THEN 'LEAD_DETAILS_FINANCE'
-    END AS Table_Reference,
-    m.definition AS SQLDefinition
-FROM sys.sql_modules m
-WHERE
-    m.definition LIKE '%LEAD_DSR%'
-    AND m.definition LIKE '%LEAD_DETAILS_FINANCE%'
-    AND (
-        m.definition LIKE '%INSERT%'
-        OR m.definition LIKE '%UPDATE%'
-    )
-ORDER BY ObjectName;
-```
+As discussed, we have prepared the help manual.
+
+The requirement is based on the After Sales module already delivered. As part of this, a standalone page was created to support the two legacy products, MO51 and MO53.
+
+There are no changes to the existing business logic or technical implementation.
+
+Regards,
