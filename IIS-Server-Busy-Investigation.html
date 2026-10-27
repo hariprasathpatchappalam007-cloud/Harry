@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>IIS Server Busy | Two-Node Investigation &amp; Session Analysis</title>
+  <style>
+    :root{--ink:#172b44;--muted:#546780;--navy:#10263e;--blue:#2263b6;--teal:#007f80;--line:#dbe4ee;--bg:#f2f6fa;--amber:#8a5100;--soft:#fff6e5}
+    *{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:20px}
+    body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.65 "Segoe UI",Arial,sans-serif}
+    a{color:var(--blue)}a:focus-visible,button:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid #e6a323;outline-offset:4px}
+    header{background:linear-gradient(125deg,#0e233a 10%,#194c76 65%,#087e83);color:#fff;padding:56px max(24px,calc((100vw - 1200px)/2)) 42px}
+    .eyebrow{text-transform:uppercase;letter-spacing:2.5px;font-size:12px;font-weight:700;color:#9fe2eb}
+    h1{font-size:clamp(32px,4.5vw,54px);line-height:1.13;max-width:950px;margin:16px 0}
+    header p{max-width:880px;color:#d9e8f4;font-size:18px}header .tag{display:inline-block;border:1px solid #6c91aa;border-radius:20px;padding:4px 13px;font-size:12px;margin:5px 8px 0 0;color:#e3f2fb}
+    .toolbar{display:flex;flex-wrap:wrap;gap:12px;margin-top:24px}.button,button{display:inline-block;background:#fff;color:#164b75;border:0;border-radius:7px;padding:11px 17px;text-decoration:none;font:600 14px "Segoe UI",Arial,sans-serif;cursor:pointer}
+    .button.alt{background:transparent;border:1px solid #93becd;color:#fff}
+    main{max-width:1248px;margin:auto;padding:28px 24px 60px}nav{display:flex;flex-wrap:wrap;gap:8px 20px;background:#fff;padding:16px 22px;border:1px solid var(--line);border-radius:12px;margin-bottom:24px}
+    nav a{text-decoration:none;font-size:13px;font-weight:650}section{background:#fff;border:1px solid var(--line);border-radius:14px;padding:30px;margin-bottom:24px;box-shadow:0 6px 24px #172b4405}
+    h2{font-size:25px;line-height:1.25;margin:0 0 18px;letter-spacing:-.4px}h3{font-size:17px;margin:22px 0 10px}p{margin:10px 0 16px}.muted{color:var(--muted)}.small{font-size:13px}
+    .number{font-size:12px;color:var(--teal);font-weight:750;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px}
+    .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}.grid.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .card{padding:20px;border:1px solid var(--line);border-radius:10px;background:#f8fbfe}.card strong.big{display:block;color:var(--blue);font-size:28px;line-height:1.25;margin-bottom:8px}
+    .card p{margin-bottom:0}.callout{border-left:4px solid var(--teal);background:#eaf7f7;padding:15px 19px;margin:20px 0;border-radius:0 8px 8px 0}.callout.warn{border-color:#d29120;background:var(--soft)}.callout.danger{border-color:#c44747;background:#fff0ef}
+    .pill{display:inline-block;font-size:11px;font-weight:750;letter-spacing:.5px;padding:3px 9px;border-radius:20px;background:#e8f1ff;color:#18549a}.pill.warn{background:#fff0ce;color:#8a5100}
+    .table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:13px;margin:12px 0}th{text-align:left;color:#fff;background:#1a3b5c;font-weight:650}th,td{padding:13px 15px;vertical-align:top;border-bottom:1px solid var(--line)}tbody tr:nth-child(even){background:#f6f9fc}
+    td:first-child{font-weight:600}code{font:12.5px Consolas,monospace;background:#edf2f8;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}
+    pre{background:#11283e;color:#dcebf7;padding:20px;border-radius:9px;overflow:auto;line-height:1.65;font-size:12.5px;white-space:pre}
+    pre code{background:none;color:inherit;padding:0;overflow-wrap:normal}.flow{display:flex;gap:12px;align-items:stretch;margin:22px 0}.flow .step{flex:1;background:#edf5fc;border:1px solid #cfdfed;border-radius:9px;padding:16px}.flow .arrow{align-self:center;color:var(--teal);font-size:24px}
+    ul,ol{padding-left:23px}li{margin:7px 0}.checklist{list-style:none;padding:0}.checklist label{display:flex;gap:12px;align-items:baseline;padding:10px 0;border-bottom:1px solid #e6edf4}.checklist input{accent-color:var(--teal)}
+    details{border:1px solid var(--line);border-radius:9px;padding:15px 18px;margin:13px 0}summary{font-weight:650;cursor:pointer}footer{text-align:center;color:var(--muted);font-size:12px;padding:0 24px 30px}
+    @media(max-width:800px){.grid,.grid.two{grid-template-columns:1fr}section{padding:22px}.flow{flex-direction:column}.flow .arrow{transform:rotate(90deg)}header{padding:36px 24px}th,td{padding:10px}}
+    @media print{@page{size:A4;margin:14mm}body{background:#fff;font-size:10pt}header{background:#10263e!important;padding:24px;print-color-adjust:exact;-webkit-print-color-adjust:exact}h1{font-size:28pt}header p{font-size:11pt}main{padding:15px 0}nav,.toolbar{display:none}section{box-shadow:none;padding:18px;break-inside:auto}h2,h3{break-after:avoid}.card,.callout,tr,pre{break-inside:avoid}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:8pt}a{color:inherit}.table-wrap{overflow:visible}th{print-color-adjust:exact;-webkit-print-color-adjust:exact}footer{padding:0}}
+  </style>
+</head>
+<body>
+<header>
+  <div class="eyebrow">Operational readiness / incident investigation</div>
+  <h1>One node is busy.<br>The real bottleneck may be waiting.</h1>
+  <p>A two-node IIS troubleshooting playbook, per-user activity collector, and application-session counting approach. Low CPU and free RAM do not rule out request queues, locks or dependency exhaustion.</p>
+  <span class="tag">HFLMS context</span><span class="tag">Evidence before tuning</span><span class="tag">Read-only PowerShell</span><span class="tag">Offline-ready report</span>
+  <div class="toolbar">
+    <a class="button" href="Get-IISUserActivity.ps1" download>Download PowerShell collector</a>
+    <button type="button" onclick="window.print()">Print / save as PDF</button>
+    <a class="button alt" href="#runbook">Go to execution guide</a>
+  </div>
+</header>
+<main>
+  <nav aria-label="Report navigation">
+    <a href="#summary">Executive view</a><a href="#meaning">Users vs sessions</a><a href="#triage">Error decision tree</a><a href="#hypotheses">Root-cause matrix</a><a href="#compare">Node comparison</a><a href="#runbook">PowerShell guide</a><a href="#sessions">Exact session counts</a><a href="#actions">Action plan</a><a href="#references">References</a>
+  </nav>
+
+  <section id="summary">
+    <div class="number">01 / executive assessment</div>
+    <h2>Do not conclude that concurrent users are the root cause yet.</h2>
+    <div class="grid">
+      <div class="card"><strong class="big">2 nodes</strong><strong>Asymmetric failure</strong><p>Only one node is reported busy. Compare traffic distribution, node configuration and worker state at the same time.</p></div>
+      <div class="card"><strong class="big">CPU / RAM</strong><strong>Below reported thresholds</strong><p>This does not measure blocked requests, database waits, thread starvation, connection pools or per-session locks.</p></div>
+      <div class="card"><strong class="big">Unconfirmed</strong><strong>Root cause status</strong><p>No incident logs, response headers, live counters or process dumps were supplied. This is a diagnostic plan, not a proven RCA.</p></div>
+    </div>
+    <div class="callout"><strong>Working hypothesis:</strong> requests may be arriving faster than the affected node can complete them. It can be waiting on SQL, external services, locks or available worker threads while CPU remains low. Traffic skew or lower limits on that node can amplify the same symptom.</div>
+    <div class="table-wrap">
+      <table>
+        <caption class="small muted">Context from local documents; reconfirm against the current deployment.</caption>
+        <thead><tr><th>Evidence source</th><th>Reported context</th><th>What it does not prove</th></tr></thead>
+        <tbody>
+          <tr><td>User observation</td><td>One of two nodes returns &quot;Requested server busy&quot;; CPU and RAM are below thresholds.</td><td>The actual HTTP status, generating layer, request concurrency or cause.</td></tr>
+          <tr><td><a href="design-document.html">Existing architecture document</a></td><td>Citrix fronts two IIS app nodes; previous 503 interruptions lasted about 8 and 2 minutes. The document describes response-based routing limitations.</td><td>That this incident is identical, or that all Citrix deployments lack application health checks. Verify deployed capabilities with the LB team.</td></tr>
+          <tr><td><a href="ServerConfiguration.csv">Server inventory</a></td><td>App nodes 10.224.2.131 and 10.224.2.132: 4 CPU cores, 16 GB RAM each; Windows Server 2012 is listed.</td><td>Current OS/build, 32/64-bit worker mode, patch parity or identical application settings.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="small muted">Prepared 27 October 2026. Historical observations above are attributed to the supplied documents, not independently verified. Existing files are unchanged.</p>
+  </section>
+
+  <section id="meaning">
+    <div class="number">02 / the measurement trap</div>
+    <h2>A connection, a request and a session are different things.</h2>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Metric</th><th>Meaning</th><th>Can IIS provide it?</th></tr></thead>
+      <tbody>
+        <tr><td>Concurrent connections</td><td>Open network connections, including idle keep-alive connections. HTTP/2 can multiplex multiple requests on one connection.</td><td>Yes, site counters; not a user or session count.</td></tr>
+        <tr><td>Concurrent requests</td><td>Requests in flight at a particular instant. Queueing and execution are separate stages.</td><td>IIS worker-request snapshots and runtime/queue counters; brief peaks can be missed.</td></tr>
+        <tr><td>Distinct users observed</td><td>Identities present in requests during a defined UTC window.</td><td>W3C <code>cs-username</code> for supported authentication, or an approved application-written identity field. Not proof that users are still logged in.</td></tr>
+        <tr><td>Application / ASP.NET sessions</td><td>Application-managed state, often shared by tabs in the same browser profile. A session can exist before login.</td><td>Classic ASP.NET may expose aggregate <code>Sessions Active</code>; no generic per-user enumeration.</td></tr>
+        <tr><td>Authenticated login sessions per user</td><td>Unexpired, non-revoked application login records for one identity; definition depends on the application's authentication model.</td><td>Requires application/session registry telemetry. IIS cannot infer it reliably.</td></tr>
+      </tbody>
+    </table></div>
+    <div class="callout warn"><strong>Direct answer:</strong> there is no universal PowerShell command that extracts every user's current login sessions from IIS. The supplied script counts <em>observed activity</em> from IIS logs and, when provided a complete application-owned session snapshot, counts <em>active sessions per user at a chosen timestamp</em>. It does not pretend one is the other.</div>
+    <ul>
+      <li><strong>Do not group sessions by client IP.</strong> NAT, proxies and Citrix SNIP addresses can combine many users; one user may use several IPs.</li>
+      <li><strong>Do not count browser tabs, TCP connections, requests or cookies as logins.</strong> Several tabs usually share a session; separate browser profiles/devices may not.</li>
+      <li><strong>Forms authentication often leaves <code>cs-username</code> as <code>-</code>.</strong> Application identity must then be emitted through approved instrumentation. Anonymous is unknown identity, not zero users.</li>
+      <li><strong>Cross-node totals must be deduplicated centrally.</strong> A single session can appear on both nodes; local distinct counts cannot simply be added.</li>
+    </ul>
+  </section>
+
+  <section id="triage">
+    <div class="number">03 / first establish who rejected the request</div>
+    <h2>The displayed message is not a diagnosis.</h2>
+    <div class="flow" aria-label="Evidence flow">
+      <div class="step"><strong>1. Browser / client</strong><br>UTC time, actual status, response body signature, request ID, URL path and affected operation.</div>
+      <span class="arrow" aria-hidden="true">&rarr;</span>
+      <div class="step"><strong>2. Citrix / proxy</strong><br>Selected backend, health state, persistence, rejection reason and retry behavior.</div>
+      <span class="arrow" aria-hidden="true">&rarr;</span>
+      <div class="step"><strong>3. IIS / application</strong><br>Matching IIS status tuple, HTTPERR reason, worker PID, queues and application trace.</div>
+    </div>
+    <p>Correlate the same request and time across layers. Response headers alone are not definitive because intermediaries can rewrite them. A custom application page can say &quot;busy&quot; with HTTP 200, 500 or 503. If there is no IIS record, check logging delay/disablement, the selected backend, HTTPERR and LB evidence before blaming the worker.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Observed evidence</th><th>Interpretation</th><th>Next check</th></tr></thead>
+      <tbody>
+        <tr><td>IIS 503.0</td><td>Application pool unavailable.</td><td>Pool state, identity/startup failures, WAS events, crashes, rapid-fail protection and recycle timeline.</td></tr>
+        <tr><td>IIS 503.2</td><td>Concurrent request limit exceeded.</td><td>Effective <code>system.webServer/serverRuntime@appConcurrentRequestLimit</code> and actual simultaneous requests; why are they accumulating?</td></tr>
+        <tr><td>IIS 503.3</td><td>ASP.NET queue full.</td><td>ASP.NET queue/execution counters, thread starvation, session locks and slow dependencies.</td></tr>
+        <tr><td>IIS 503.4</td><td>FastCGI queue full.</td><td>FastCGI instance/queue limits and process health, only if the application uses FastCGI.</td></tr>
+        <tr><td>HTTPERR QueueFull</td><td>HTTP.sys application request queue is full.</td><td>Pool <code>queueLength</code>, queue trend, request age and drain rate. It is not the same queue as the ASP.NET application queue.</td></tr>
+        <tr><td>HTTPERR ConnLimit / AppOffline / Disabled</td><td>Site connection limit or application availability restriction.</td><td>Site <code>maxConnections</code>, pool lifecycle and administrative actions; use the precise reason.</td></tr>
+        <tr><td>500.13 or custom busy response</td><td>A separate &quot;too busy&quot; path; not necessarily an IIS 503.</td><td>Handler/runtime evidence, application throttling, licensing, downstream rejection or custom error mapping.</td></tr>
+        <tr><td>LB rejection without matching backend rejection</td><td>The edge may have generated the error.</td><td>Backend service limits, surge/connection limits, health monitors, persistence and LB logs. Exclude missing/delayed IIS logging.</td></tr>
+      </tbody>
+    </table></div>
+    <p class="small muted">Collect <code>date time s-computername s-sitename cs-method cs-uri-stem cs-username c-ip sc-status sc-substatus sc-win32-status time-taken</code> where supported. Add request correlation and a trusted node marker through approved instrumentation. Do not enable broad cookie/header logging.</p>
+  </section>
+
+  <section id="hypotheses">
+    <div class="number">04 / root-cause investigation matrix</div>
+    <h2>What CPU and RAM dashboards can miss</h2>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Hypothesis</th><th>Why low CPU is possible</th><th>Evidence that supports or rejects it</th><th>Owner</th></tr></thead>
+      <tbody>
+        <tr><td>Uneven load / sticky sessions</td><td>Persistence, source-IP affinity, weights or long requests concentrate work on one member.</td><td>Compare backend arrivals, selected members, response latency and active requests in identical windows; inspect persistence distribution. Equal request counts do not guarantee equal work.</td><td>LB + IIS</td></tr>
+        <tr><td>Thread starvation / blocking</td><td>Threads wait for synchronous I/O, locks or sync-over-async rather than compute.</td><td>Request age/queue growth, runtime thread-pool availability and approved worker dumps/traces show repeated blocked stacks. High thread count alone is not proof.</td><td>Application</td></tr>
+        <tr><td>Classic ASP.NET session lock</td><td>Concurrent writable requests with the same SessionID serialize.</td><td>Same pseudonymous session hash, overlapping requests and waits around <code>AcquireRequestState</code> or session-store locks. Correlate with a slow holder request. Stateless/read-only endpoints behave differently.</td><td>Application</td></tr>
+        <tr><td>SQL connection-pool exhaustion</td><td>Requests wait for a free connection even when SQL and web CPU look normal.</td><td>Connection acquisition timeouts, unclosed readers/transactions, provider counters and app traces. Pools are typically per-process and connection-string, so one node can fail alone.</td><td>Application + DBA</td></tr>
+        <tr><td>SQL blocking / slow queries</td><td>The worker waits on database I/O, locks or long transactions.</td><td>DBA captures blocking chain, waits, Query Store / Extended Events and request correlation. Inspect plan/parameter differences and node-specific connection behavior.</td><td>DBA</td></tr>
+        <tr><td>External dependency / network</td><td>DNS, TLS, firewall, proxy, SMB or upstream calls stall.</td><td>Per-node dependency latency, timeouts, outbound connections and DNS/routing parity; test the actual endpoint with approved probes, not just ping.</td><td>App + network</td></tr>
+        <tr><td>Pool / runtime limit drift</td><td>A low limit rejects requests before machine resources are used fully.</td><td>Compare effective limits, pool identity, runtime/pipeline, 32-bit mode, web-garden settings and app-level throttles. Match the limit to the observed rejection.</td><td>IIS + application</td></tr>
+        <tr><td>Recycling, crashes or startup</td><td>A stopped/restarting worker is not consuming much CPU.</td><td>PID/start-time changes, WAS/W3SVC and Application events, recycle schedules, rapid-fail history, deployment and antivirus timestamps.</td><td>IIS + platform</td></tr>
+        <tr><td>Per-process / storage pressure</td><td>A 32-bit worker can exhaust address space while the host has free RAM; GC, handles, disk latency or full log/temp disks can stall progress.</td><td>Private/virtual bytes, commit, GC time, handles, thread trends, disk free space/latency and process dumps. Host averages can hide short or single-core spikes.</td><td>Platform + application</td></tr>
+        <tr><td>Application concurrency / licensing rules</td><td>Software may cap users or sessions independently of IIS.</td><td>Vendor documentation, effective settings and explicit rejection logs. Check duplicate login policy, shared accounts and license-seat allocation.</td><td>App / vendor</td></tr>
+      </tbody>
+    </table></div>
+    <div class="callout"><strong>Capacity example, not a measured result:</strong> in a roughly steady system, in-flight work is approximately arrival rate &times; response time (Little's Law, using consistent boundaries). At 50 requests/sec, a jump from 0.2 sec to 10 sec changes expected work from about 10 to 500. The same number of users can therefore trigger queueing when a dependency slows down. Use request-arrival telemetry; the script's completed-log buckets are not instantaneous concurrency.</div>
+  </section>
+
+  <section id="compare">
+    <div class="number">05 / compare the healthy and unhealthy node</div>
+    <h2>A side-by-side evidence sheet</h2>
+    <p>Run the same collector on both nodes with the same historical UTC window. Start live collection as close together as possible; its actual sample window is recorded separately. Fill the blank cells with measurements, not assumptions.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Comparison dimension</th><th>Node A / 10.224.2.131</th><th>Node B / 10.224.2.132</th><th>Interpretation</th></tr></thead>
+      <tbody>
+        <tr><td>Incident UTC / affected node</td><td>Not supplied</td><td>Not supplied</td><td>Confirm clock synchronization and UTC conversion.</td></tr>
+        <tr><td>Requests/min, 503/min, status tuple</td><td>To collect</td><td>To collect</td><td>Compare <code>requests-by-minute.csv</code> and <code>http-status.csv</code>; timings are log timestamps, not instantaneous arrivals.</td></tr>
+        <tr><td>Distinct identities / missing identity</td><td>To collect</td><td>To collect</td><td>Assess observability before comparing user counts.</td></tr>
+        <tr><td>Requests in flight / oldest request</td><td>To collect</td><td>To collect</td><td>Compare repeated <code>live-requests.json</code> snapshots and elapsed times.</td></tr>
+        <tr><td>Queue size / rejected requests</td><td>To collect</td><td>To collect</td><td>Compare relevant pool instances; rejected requests may be cumulative, so evaluate deltas and resets.</td></tr>
+        <tr><td>PID / start time / pool lifecycle</td><td>To collect</td><td>To collect</td><td>Line up process changes with WAS and Application events.</td></tr>
+        <tr><td>Effective limits / session mode</td><td>To collect</td><td>To collect</td><td>Compare <code>iis-settings.json</code>; classic ASP.NET settings do not describe ASP.NET Core session behavior.</td></tr>
+        <tr><td>LB policy / health / work distribution</td><td>LB team</td><td>LB team</td><td>Not collected by this script. Request per-member data and deployed feature constraints.</td></tr>
+        <tr><td>Build / config / identity / patches</td><td>App + platform team</td><td>App + platform team</td><td>Compare release hashes and approved sanitized config exports; never export secrets wholesale.</td></tr>
+        <tr><td>SQL waits / pool usage / dependency latency</td><td>App + DBA team</td><td>App + DBA team</td><td>Not recoverable from IIS user counts; application telemetry is needed.</td></tr>
+      </tbody>
+    </table></div>
+    <h3>Session-state and load-balancer checks that are easy to miss</h3>
+    <ul>
+      <li><strong>InProc state is worker-local.</strong> Non-sticky routing, recycling or multiple workers in one pool can lose or split state. Verify architecture before changing affinity or increasing <code>maxProcesses</code>.</li>
+      <li><strong>Shared StateServer / SQL / distributed caches are not automatically healthy.</strong> Compare endpoint configuration, access, latency, expiry and serialization errors; never copy connection-string secrets into reports.</li>
+      <li><strong>Cross-node authentication parity matters.</strong> Compare protected key sharing and application identity settings appropriate to the framework; mismatches can cause login loops and repeated sessions.</li>
+      <li><strong>Health checks should reflect useful service readiness.</strong> A TCP listener or static page can be healthy while the application cannot serve requests. Validate what the deployed Citrix configuration actually supports; plan a safe alternative if constrained.</li>
+      <li><strong>Do not blindly retry non-idempotent operations.</strong> A failed response does not prove that the backend performed no work. Use application-supported idempotency before enabling retries for transactions.</li>
+    </ul>
+  </section>
+
+  <section id="runbook">
+    <div class="number">06 / ready-to-run PowerShell</div>
+    <h2>Collect evidence without changing IIS settings.</h2>
+    <p><a href="Get-IISUserActivity.ps1" download><strong>Get-IISUserActivity.ps1</strong></a> supports offline W3C analysis, application-session snapshots and optional local live IIS collection. It creates a unique subfolder for each run. It does not recycle pools, change limits, enable tracing, query SQL or call Citrix APIs.</p>
+    <div class="callout warn"><strong>Prerequisites:</strong> Windows PowerShell <strong>5.1</strong>. The inventory lists Windows Server 2012, whose default PowerShell may be older: check <code>$PSVersionTable.PSVersion</code> and use an organization-approved management framework/runtime. Offline analysis can run on a separate approved workstation. Live collection requires elevated, 64-bit PowerShell, IIS management scripting components (Microsoft.Web.Administration) and the Request Monitor role service for worker-request inspection. Follow signing/execution policy; do not bypass it.</div>
+    <h3>A. One user's activity from IIS logs</h3>
+    <pre><code># Replace the site ID, log path, username and incident window.
+# IIS W3C timestamps are UTC. 14:00 at UTC+05:30 = 08:30Z.
+.\Get-IISUserActivity.ps1 `
+  -LogPath 'D:\IISLogs\W3SVC1\u_ex261027.log' `
+  -StartUtc '2026-10-27T08:30:00Z' `
+  -EndUtc '2026-10-27T09:00:00Z' `
+  -NodeName 'APP-NODE-A' `
+  -UserName 'DOMAIN\alice' `
+  -OutputDirectory 'D:\Restricted\IIS-Incident'</code></pre>
+    <p class="small">Omit <code>-UserName</code> to report all identified users. This filter affects the user/session reports only; status and minute reports retain all requests for incident diagnosis. Values are matched case-insensitively as they appear in the logs. Start is inclusive; end is exclusive. Supply explicit timestamps with <code>Z</code> or an offset.</p>
+    <h3>B. Local live collection on each IIS node</h3>
+    <pre><code># Run locally on EACH node during the problem, in elevated PowerShell.
+# Use the same historical log window, but a separate node label.
+.\Get-IISUserActivity.ps1 `
+  -CollectLiveIIS -SiteName 'YOUR IIS SITE NAME' `
+  -StartUtc '2026-10-27T08:30:00Z' `
+  -EndUtc '2026-10-27T09:00:00Z' `
+  -Samples 12 -IntervalSeconds 5 `
+  -OutputDirectory 'D:\Restricted\IIS-Incident'</code></pre>
+    <p>Auto-discovery uses recent files in the standard per-site W3C folder and default HTTPERR location. Override with <code>-LogPath</code> and <code>-HttpErrPath</code> for redirected/copied logs. Centralized, binary or non-file logging requires an appropriate W3C export. Twelve samples with five-second sleeps span at least 55 seconds, plus collection overhead and counter probing; they are not an exact fixed-rate trace.</p>
+    <p class="small">Live samples are always collected <em>now</em>, even if the historical log window is earlier. Counters may be unavailable because of localization, absent runtime/categories, idle workers or permissions: read the warnings. Request snapshots use the documented IIS WorkerProcess.GetRequests API. If worker inspection fails, the request count is left unknown instead of reporting a false zero. Worker samples are sequential, not an atomic server-wide snapshot.</p>
+    <h3>C. Optional pseudonymous session observation in custom W3C logs</h3>
+    <pre><code># Only if the application ALREADY emits approved identity and hash fields.
+.\Get-IISUserActivity.ps1 `
+  -LogPath 'D:\IISLogs\W3SVC1\u_ex261027.log' `
+  -UserField 'app-user-id' -SessionHashField 'app-session-hash' `
+  -StartUtc '2026-10-27T08:30:00Z' -EndUtc '2026-10-27T09:00:00Z'</code></pre>
+    <p>The hash field must contain a dedicated 64-hex SHA-256/HMAC-SHA-256 pseudonym, not <code>cs(Cookie)</code> or a raw session token. Use an application-side, approved keyed HMAC with a protected stable key where possible; preserve a consistent key across nodes for correlation. Logging instrumentation is an application change and is <strong>not</strong> performed by the script. Historical distinct session hashes are still not current logins.</p>
+    <details open>
+      <summary>Output files and their interpretation</summary>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Output</th><th>Use</th><th>Important scope / limitation</th></tr></thead>
+        <tbody>
+          <tr><td><code>summary.json</code>, <code>coverage.json</code>, <code>warnings.json</code></td><td>Window, input coverage, missing identity and collection gaps.</td><td>Read first. Empty results do not prove zero activity. Malformed/incomplete log lines are counted and warned.</td></tr>
+          <tr><td><code>users-observed.csv</code></td><td>Requests, 503s, first/last observation and optional distinct session hashes per identity.</td><td>Historical activity only. Blank session metric = unavailable. <code>RequestsWithSessionField</code> identifies hash-field coverage.</td></tr>
+          <tr><td><code>requests-by-minute.csv</code></td><td>Logged request volume, observed identities, 503s and average/max time taken.</td><td>Not exact arrivals or concurrency; no percentile estimate. Missing time-taken stays unknown.</td></tr>
+          <tr><td><code>http-status.csv</code>, <code>httperr-summary.csv</code></td><td>Status/substatus/Win32 tuple and HTTP.sys reasons.</td><td>HTTPERR is server-wide and can include unrelated sites. Match raw evidence to the affected pool/site.</td></tr>
+          <tr><td><code>application-sessions.csv</code></td><td>Active sessions per user, when a session inventory is supplied.</td><td>Only as authoritative and complete as the application snapshot; no raw hashes are exported.</td></tr>
+          <tr><td><code>iis-settings.json</code></td><td>Site/pool limits, selected runtime and session settings.</td><td>Live mode only; deliberately excludes passwords, keys and connection strings. Not a complete configuration diff.</td></tr>
+          <tr><td><code>live-requests.json</code>, <code>live-window.json</code></td><td>Repeated site-filtered in-flight request snapshots and actual sampling window.</td><td>Live mode only; no per-user identity, URLs or cookies are captured. Requests can enter/finish between samples.</td></tr>
+          <tr><td><code>worker-processes.csv</code>, <code>performance.csv</code></td><td>PID/start time, cumulative CPU seconds, memory, threads, handles, queues and counters.</td><td>Live mode only; CPU seconds are not percent. Shared pools include other sites; wildcard counters are machine-wide and must be filtered to relevant instances. Check counter Status before using Value.</td></tr>
+          <tr><td><code>was-events.json</code></td><td>System WAS/W3SVC events for the requested historical window.</td><td>Live mode only. Application/.NET crash events, SQL, LB logs, dumps and FREB require separate collection.</td></tr>
+          <tr><td><code>collection-failure.json</code></td><td>Explicit terminating failure details, if a run fails.</td><td>Partial outputs must not be used as a complete collection. Fix the error and rerun.</td></tr>
+        </tbody>
+      </table></div>
+    </details>
+    <div class="callout warn"><strong>Operational and privacy controls:</strong> pre-create an access-restricted output parent folder; the script inherits its ACLs and does not harden them. Identifiers, event messages and settings can be sensitive. Store locally under approved retention, transfer only through approved channels, and do not upload logs/dumps to public services. CSV strings with formula-like prefixes are apostrophe-escaped for safer spreadsheet viewing. Use only one application's/site's logs per analysis; avoid overlapping copied logs, which can double-count. For large volumes, copy a bounded incident set to an approved analysis host; streaming avoids loading full log files but scans the selected files.</div>
+  </section>
+
+  <section id="sessions">
+    <div class="number">07 / how to get actual sessions per user</div>
+    <h2>The application must supply the user-to-session mapping.</h2>
+    <p>Agree first whether &quot;session&quot; means an authenticated login, a classic ASP.NET state session or a vendor license seat. For login counts, ask the application team for a <strong>complete, consistent snapshot</strong> from its authoritative registry covering both nodes and this application. IIS, <code>quser</code> and <code>Get-PSSession</code> cannot provide this mapping; the latter tools refer to Windows/remote-management sessions.</p>
+    <h3>Snapshot CSV contract</h3>
+    <pre><code>UserId,SessionKeyHash,LastSeenUtc,ExpiresUtc,IsRevoked
+DOMAIN\alice,aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa,2026-10-27T08:58:00Z,2026-10-27T09:28:00Z,false
+DOMAIN\alice,bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb,2026-10-27T08:59:00Z,2026-10-27T09:29:00Z,false
+DOMAIN\bob,cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc,2026-10-27T08:10:00Z,2026-10-27T08:40:00Z,false</code></pre>
+    <p class="small">Synthetic example only; repeated letters are placeholders, not real hashes. <code>UserId</code> can be a stable approved pseudonym. <code>SessionKeyHash</code> is a unique 64-hex pseudonym of a session, globally consistent across nodes. Keep one row per session, including its current effective expiry and revocation state. Boolean values must be <code>true</code> or <code>false</code>; timestamps must have explicit timezones.</p>
+    <pre><code>.\Get-IISUserActivity.ps1 `
+  -SessionInventoryPath 'D:\Restricted\application-sessions-snapshot.csv' `
+  -UserName 'DOMAIN\alice' `
+  -StartUtc '2026-10-27T08:30:00Z' `
+  -EndUtc '2026-10-27T09:00:00Z' `
+  -OutputDirectory 'D:\Restricted\IIS-Incident'
+
+# Expected in application-sessions.csv for the sample above:
+# User = DOMAIN\alice; ActiveSessions = 2; AsOf = 09:00:00Z</code></pre>
+    <div class="callout"><strong>Counting rule at EndUtc:</strong> <code>LastSeenUtc &lt;= EndUtc</code>, <code>ExpiresUtc &gt; EndUtc</code>, and <code>IsRevoked = false</code>. Expiry must represent the application's effective idle/absolute timeout and account invalidation policy. Active means valid according to the registry, not necessarily a person interacting at this instant. Duplicate session hashes cause a hard failure instead of inflated totals.</div>
+    <h3>If no registry exists</h3>
+    <ol>
+      <li>Instrument login/session creation and authenticated request completion using a stable user ID, safe session pseudonym, UTC timestamps, node/app identity, effective expiry and lifecycle state.</li>
+      <li>Maintain a central record with defined idle timeout, absolute expiry, logout/revocation, session rotation and app-restart behavior. Update on activity according to the application's real expiry rules.</li>
+      <li>Do not rely only on <code>Session_End</code>: classic ASP.NET supports that event only for InProc, and process termination can prevent reliable cleanup. Use expiry and authoritative invalidation, not event delivery alone.</li>
+      <li>Export a consistent snapshot at the chosen analysis time. A present-day snapshot cannot reconstruct an old incident after expiry/rotation; retain approved lifecycle history for historical RCA.</li>
+      <li>For stateless tokens, exact login counts require an explicit login/token registry. The number of valid tokens is not automatically the number of people or devices.</li>
+    </ol>
+    <p><strong>Per-user concurrency is a separate instrument.</strong> Record request-start and completion events with user/session pseudonyms and a correlation ID, then calculate overlapping intervals. Completed W3C lines and distinct session counts alone cannot give an exact per-user in-flight count.</p>
+  </section>
+
+  <section id="actions">
+    <div class="number">08 / containment, proof and prevention</div>
+    <h2>A practical incident action plan</h2>
+    <div class="grid two">
+      <div class="card"><span class="pill warn">During impact</span><h3>Preserve before recovery, if safe</h3><ol>
+        <li>Record UTC time, failing operation, actual HTTP status and selected node.</li>
+        <li>Capture the same log window on both nodes; collect repeated live samples while the symptom exists.</li>
+        <li>Capture relevant IIS/HTTPERR, LB, application and database evidence.</li>
+        <li>If approved, drain the bad member using supported LB controls; verify the healthy node has headroom and account for sticky/InProc sessions.</li>
+        <li>Restore service under the incident runbook. Do not delay critical recovery just to complete collection.</li>
+      </ol></div>
+      <div class="card"><span class="pill">After stabilization</span><h3>Prove the cause, then tune</h3><ol>
+        <li>Build a single UTC timeline of errors, request age, queues, dependencies and PID changes.</li>
+        <li>If requests stall, use approved FREB rules for relevant status codes or slow completed requests; use appropriate dumps/tracing for hangs that never complete.</li>
+        <li>Capture worker dumps only with approval: they may pause processes, consume disk and contain secrets/customer data.</li>
+        <li>Fix the supported cause: blocking code, leaked connections, slow dependency, skewed routing or configuration drift.</li>
+        <li>Repeat a controlled test with representative users, sessions and operations; verify error rate, p95/p99 latency and queue drain on both nodes.</li>
+      </ol></div>
+    </div>
+    <div class="callout danger"><strong>Do not use these as unproven fixes:</strong> raising every queue/connection/thread limit, setting unlimited timeouts, disabling rapid-fail protection, adding web-garden workers or scheduling repeated IIS restarts. These can mask failures, increase latency, overload SQL, break session behavior or erase evidence. Adding ports/hosting instances alone does not remove a shared dependency bottleneck.</div>
+    <h3>Measurable acceptance criteria</h3>
+    <p>Agree business-appropriate targets before testing; none were supplied. Demonstrate no unexplained busy responses during the agreed peak-load and soak windows, latency within the agreed p95/p99 SLO, no steadily growing queues or resource leaks, balanced work consistent with the LB policy, successful safe node drain/failover, and correct login/session behavior across nodes. Capture expected versus observed values, rather than only &quot;CPU normal.&quot;</p>
+    <h3>Evidence checklist for the next incident</h3>
+    <ul class="checklist">
+      <li><label><input type="checkbox"> Actual status, UTC timestamp, request/correlation ID, operation and backend node recorded.</label></li>
+      <li><label><input type="checkbox"> Identical IIS log window collected from both nodes; missing identity and log buffering considered.</label></li>
+      <li><label><input type="checkbox"> HTTPERR reasons, effective limits, process start/PID and request/queue snapshots captured.</label></li>
+      <li><label><input type="checkbox"> Citrix member selection, persistence, health monitor and rejection evidence collected.</label></li>
+      <li><label><input type="checkbox"> Application/.NET events, SQL waits/pool errors and downstream latency correlated.</label></li>
+      <li><label><input type="checkbox"> Session definition and authoritative user-to-session data agreed with application owner.</label></li>
+      <li><label><input type="checkbox"> Change/deployment timeline, platform parity, disk health and recovery actions documented.</label></li>
+    </ul>
+    <p class="small muted">Checklist state is local to this open page and is not saved. Print to retain a completed copy. The inventory's Windows Server 2012 entry also warrants a separate support/ESU, patching and migration review; it is not evidence that OS age caused this incident.</p>
+    <h3>RCA handoff format</h3>
+    <p><strong>Impact &rarr; UTC timeline &rarr; rejection layer &rarr; observed bottleneck &rarr; causal evidence &rarr; contributing factors &rarr; recovery &rarr; permanent correction &rarr; validation results &rarr; owner / due date.</strong> Distinguish the primary cause from the reason only one node was affected and from any failure to drain or fail over.</p>
+  </section>
+
+  <section id="references">
+    <div class="number">09 / source notes and verification</div>
+    <h2>Reference material</h2>
+    <ul>
+      <li><a href="https://learn.microsoft.com/en-us/troubleshoot/developer/webapps/iis/health-diagnostic-performance/http-status-code">Microsoft: IIS HTTP status codes</a> &mdash; including 503.0, 503.2, 503.3, 503.4 and 500.13.</li>
+      <li><a href="https://learn.microsoft.com/en-us/windows/win32/http/types-of-errors-logged-by-the-http-server-api">Microsoft: HTTP Server API error reasons</a> &mdash; QueueFull, ConnLimit, AppOffline and other HTTPERR reasons.</li>
+      <li><a href="https://learn.microsoft.com/en-us/previous-versions/aspnet/ms178581(v=vs.100)">Microsoft: classic ASP.NET session-state overview</a> &mdash; session identity/storage, exclusive same-session access and Session_End limitations. This is .NET Framework guidance, not ASP.NET Core guidance.</li>
+      <li><a href="https://learn.microsoft.com/en-us/iis/get-started/getting-started-with-iis/getting-started-with-appcmdexe">Microsoft: getting started with AppCmd</a> &mdash; runtime inspection and request listing.</li>
+      <li><a href="https://learn.microsoft.com/en-us/dotnet/api/microsoft.web.administration.workerprocess.getrequests?view=iis-dotnet">Microsoft: WorkerProcess.GetRequests</a> and <a href="https://learn.microsoft.com/en-us/dotnet/api/microsoft.web.administration.request?view=iis-dotnet">Request properties</a> &mdash; the read-only request inspection API used by this collector.</li>
+      <li>Local inputs: <a href="design-document.html">architecture and incident narrative</a> and <a href="ServerConfiguration.csv">server inventory</a>. These are context, not live measurements.</li>
+    </ul>
+    <p class="small muted">The report has no external fonts, libraries, analytics or data uploads. Internet access is needed only to open external references. Keep the collector beside this HTML for its download link; keep the two original context files beside it if their links are required.</p>
+    <p class="small"><strong>Offline validation:</strong> run <a href="Test-IISUserActivity.ps1">Test-IISUserActivity.ps1</a> in Windows PowerShell 5.1. It exercises synthetic IIS/HTTPERR logs, UTC boundaries, user filtering, session expiry/revocation, missing fields, CSV escaping and explicit failure paths. These tests do not validate live IIS APIs, installed counter categories, production access or the actual incident cause; test live collection on an approved IIS node before operational use.</p>
+  </section>
+</main>
+<footer>IIS Server Busy Investigation &bull; Evidence-led diagnosis &bull; No root cause asserted without incident telemetry</footer>
+</body>
+</html>
