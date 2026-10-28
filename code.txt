@@ -1,9 +1,0 @@
-Dear Osama,
-
-As per the agreed requirement, for a closed CIF, the response should not return the status as "Closed" or provide a reason. Instead, it should return a blank response, allowing us to proceed with CIF creation while T24 handles the deduplication internally.
-
-However, for the request provided, we received the CIF with the reason "Dormancy" and status "Closed".
-
-Kindly review and fix this issue.
-
-Regards,
