@@ -1,0 +1,14 @@
+WITH LatestRecords AS
+(
+    SELECT *,
+           ROW_NUMBER() OVER (
+               PARTITION BY RefNo
+               ORDER BY ChangedTime DESC
+           ) AS RN
+    FROM LEAD_APPLICATION_MOVEMENT_DETAILS
+    WHERE Current_Stage = 'Level-6'
+      AND RefNo IN ()
+)
+SELECT *
+FROM LatestRecords
+WHERE RN = 1;
