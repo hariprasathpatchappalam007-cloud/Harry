@@ -1,103 +1,23 @@
-DECLARE @LEAD_NO VARCHAR(50) = '83789';
-
-;WITH CustomerIncome AS
-(
-    SELECT
-        LEAD_NO,
-        SUM(ISNULL(CUSTOMER_SAL_APPRAISED, 0)) AS TOTAL_INCOME,
-        COUNT(*) AS CUSTOMER_COUNT
-    FROM LEAD_DETAILS_CUSTOMER
-    WHERE LEAD_NO = @LEAD_NO
-      AND ISNULL(STATUS, 'A') = 'A'
-      AND CUSTTYPE = 'Co-Applicant'
-    GROUP BY LEAD_NO
-),
-CustomerLiabilities AS
-(
-    SELECT
-        B.LEAD_NO,
-        SUM(ISNULL(A.CUSTOMER_LIB_AMT, 0)) AS TOTAL_LIABILITIES
-    FROM CUST_LIABILITY A
-    INNER JOIN LEAD_DETAILS_CUSTOMER B
-        ON A.LEAD_NO = B.LEAD_NO
-       AND A.CUSTOMERSRNO = B.CUSTOMERSRNO
-    WHERE B.LEAD_NO = @LEAD_NO
-      AND ISNULL(B.STATUS, 'A') = 'A'
-      AND B.CUSTTYPE = 'Co-Applicant'
-    GROUP BY B.LEAD_NO
-),
-CreditCardLiabilities AS
-(
-    SELECT
-        B.LEAD_NO,
-        SUM(ISNULL(A.CC_AMT_LIMIT, 0)) AS TOTAL_CC_LIMIT
-    FROM CUST_CC A
-    INNER JOIN LEAD_DETAILS_CUSTOMER B
-        ON A.LEAD_NO = B.LEAD_NO
-       AND A.CUSTOMERSRNO = B.CUSTOMERSRNO
-    WHERE B.LEAD_NO = @LEAD_NO
-      AND ISNULL(B.STATUS, 'A') = 'A'
-      AND B.CUSTTYPE = 'Co-Applicant'
-    GROUP BY B.LEAD_NO
-),
-Finance AS
-(
-    SELECT
-        LEAD_NO,
-        ISNULL(LEAD_EMI, 0) AS LEAD_EMI,
-        ISNULL(LEAD_LIFE_TAKAFUL, 0) AS LEAD_LIFE_TAKAFUL,
-        ISNULL(MBRE_LIC, 0) AS MBRE_LIC
-    FROM LEAD_DETAILS_FINANCE
-    WHERE LEAD_NO = @LEAD_NO
-)
 SELECT
-    @LEAD_NO AS LEAD_NO,
-
-    CI.CUSTOMER_COUNT,
-    CI.TOTAL_INCOME AS CUSTOMER_INCOME,
-
-    F.LEAD_EMI,
-    F.LEAD_LIFE_TAKAFUL,
-    F.MBRE_LIC,
-
-    ISNULL(CL.TOTAL_LIABILITIES, 0) AS CUSTOMER_LIABILITIES,
-    ISNULL(CC.TOTAL_CC_LIMIT, 0) AS CREDIT_CARD_LIABILITIES,
-
-    ISNULL(CL.TOTAL_LIABILITIES, 0)
-      + ISNULL(CC.TOTAL_CC_LIMIT, 0) AS TOTAL_LIABILITIES,
-
-    -- Scenario 1: Single Takaful
-    CAST(
-        (
-            (
-                F.MBRE_LIC
-                + F.LEAD_LIFE_TAKAFUL
-                + F.LEAD_EMI
-                + ISNULL(CL.TOTAL_LIABILITIES, 0)
-                + ISNULL(CC.TOTAL_CC_LIMIT, 0)
-            ) * 100.0
-        ) / NULLIF(CI.TOTAL_INCOME, 0)
-        AS DECIMAL(18,2)
-    ) AS DSR_SINGLE_TAKAFUL,
-
-    -- Scenario 2: Double Takaful
-    CAST(
-        (
-            (
-                F.MBRE_LIC
-                + (F.LEAD_LIFE_TAKAFUL * 2)
-                + F.LEAD_EMI
-                + ISNULL(CL.TOTAL_LIABILITIES, 0)
-                + ISNULL(CC.TOTAL_CC_LIMIT, 0)
-            ) * 100.0
-        ) / NULLIF(CI.TOTAL_INCOME, 0)
-        AS DECIMAL(18,2)
-    ) AS DSR_DOUBLE_TAKAFUL
-
-FROM CustomerIncome CI
-INNER JOIN Finance F
-    ON CI.LEAD_NO = F.LEAD_NO
-LEFT JOIN CustomerLiabilities CL
-    ON CI.LEAD_NO = CL.LEAD_NO
-LEFT JOIN CreditCardLiabilities CC
-    ON CI.LEAD_NO = CC.LEAD_NO;
+    STRING_AGG(
+        CAST(
+            COLUMN_NAME + ' ' +
+            DATA_TYPE +
+            CASE
+                WHEN CHARACTER_MAXIMUM_LENGTH IS NOT NULL
+                THEN '(' +
+                    CASE
+                        WHEN CHARACTER_MAXIMUM_LENGTH = -1 THEN 'MAX'
+                        ELSE CAST(CHARACTER_MAXIMUM_LENGTH AS VARCHAR(10))
+                    END + ')'
+                WHEN DATA_TYPE IN ('decimal', 'numeric')
+                THEN '(' + CAST(NUMERIC_PRECISION AS VARCHAR(10)) +
+                     ',' + CAST(NUMERIC_SCALE AS VARCHAR(10)) + ')'
+                ELSE ''
+            END +
+            CASE WHEN IS_NULLABLE = 'NO' THEN ' NOT NULL' ELSE ' NULL' END
+        AS VARCHAR(MAX)),
+        ', '
+    ) WITHIN GROUP (ORDER BY ORDINAL_POSITION) AS TableStructure
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_NAME = 'Core_flex_all_apps_master';
