@@ -1,93 +1,10 @@
-;WITH Latest_Audit AS
-(
-    SELECT
-        LEA_NO,
-        LEAD_DSR,
-        LEAD_EMI,
-        UPDATEDON_DATE,
-        ROW_NUMBER() OVER
-        (
-            PARTITION BY LEA_NO
-            ORDER BY UPDATEDON_DATE DESC
-        ) AS RN
-    FROM LEAD_DETAILS_AUDIT
-),
-Latest_Finance AS
-(
-    SELECT
-        LEAD_NO,
-        LEAD_DSR,
-        FINANCE_AMOUNT,
-        MBREF_AMOUNT,
-        UPDATEDON_DATE,
-        ROW_NUMBER() OVER
-        (
-            PARTITION BY LEAD_NO
-            ORDER BY UPDATEDON_DATE DESC
-        ) AS RN
-    FROM LEAD_DETAILS_FINANCE
-),
-Latest_Scorecard AS
-(
-    SELECT
-        LEAD_NO,
-        REQUESTXML,
-        CREATEDON_DATE,
-        ROW_NUMBER() OVER
-        (
-            PARTITION BY LEAD_NO
-            ORDER BY CREATEDON_DATE DESC
-        ) AS RN
-    FROM SOA_CallLog_SCORECARD
-    WHERE METHOD_NAME = 'SAS_SCORECARD'
-)
+Dear Turab,
 
-SELECT
-    LD.LEAD_NO,
-    LD.LEAD_STAGE,
-    LD.CREATEDON_DATE AS LEAD_CREATED_DATE,
+As part of the new process, Shahzad has intentionally moved the old cases back to the Maker queue.
 
-    -- Audit Table
-    LA.LEAD_DSR AS AUDIT_DSR,
-    LA.LEAD_EMI AS AUDIT_EMI,
-    LA.UPDATEDON_DATE AS AUDIT_UPDATED_DATE,
+Therefore, no further action is required from the IT side at this stage. The system is working as expected.
 
-    -- Finance Table
-    LF.LEAD_DSR AS FINANCE_DSR,
-    LF.FINANCE_AMOUNT,
-    LF.MBREF_AMOUNT,
-    LF.UPDATEDON_DATE AS FINANCE_UPDATED_DATE,
+Thank you for your understanding.
 
-    -- Scorecard Table
-    CAST(LS.REQUESTXML AS XML).value(
-        '(//*[local-name()="Dsr"]/text())[1]',
-        'DECIMAL(18,2)'
-    ) AS SCORECARD_DSR,
-
-    CAST(LS.REQUESTXML AS XML).value(
-        '(//*[local-name()="Financevalue"]/text())[1]',
-        'DECIMAL(18,2)'
-    ) AS SCORECARD_FINANCEVALUE,
-
-    CAST(LS.REQUESTXML AS XML).value(
-        '(//*[local-name()="Mbrefinancevalue"]/text())[1]',
-        'DECIMAL(18,2)'
-    ) AS SCORECARD_MBREFINANCEVALUE,
-
-    LS.CREATEDON_DATE AS SCORECARD_CREATED_DATE
-
-FROM LEAD_DETAILS LD
-
-LEFT JOIN Latest_Audit LA
-    ON LD.LEAD_NO = LA.LEA_NO
-    AND LA.RN = 1
-
-LEFT JOIN Latest_Finance LF
-    ON LD.LEAD_NO = LF.LEAD_NO
-    AND LF.RN = 1
-
-LEFT JOIN Latest_Scorecard LS
-    ON LD.LEAD_NO = LS.LEAD_NO
-    AND LS.RN = 1
-
-ORDER BY LD.LEAD_NO;
+Regards,
+[Your Name]
