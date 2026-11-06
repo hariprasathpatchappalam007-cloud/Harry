@@ -10,10 +10,16 @@ DECLARE @CountryCount INT;
 DECLARE @RowsAffected INT;
 
 IF DB_NAME() <> N'LMS_DEV'
-    THROW 51000, 'Masking stopped: this script is restricted to LMS_DEV. Update the database guard only after confirming the target is an isolated copy.', 1;
+BEGIN
+    RAISERROR('Masking stopped: this script is restricted to LMS_DEV. Update the database guard only after confirming the target is an isolated copy.', 16, 1);
+    RETURN;
+END;
 
 IF OBJECT_ID(N'dbo.CORE_FLEX_ALL_APPS_MASTER', N'U') IS NULL
-    THROW 51001, 'Masking stopped: dbo.CORE_FLEX_ALL_APPS_MASTER does not exist in LMS_DEV.', 1;
+BEGIN
+    RAISERROR('Masking stopped: dbo.CORE_FLEX_ALL_APPS_MASTER does not exist in LMS_DEV.', 16, 1);
+    RETURN;
+END;
 
 IF EXISTS
 (
@@ -21,7 +27,10 @@ IF EXISTS
     FROM dbo.CORE_FLEX_ALL_APPS_MASTER
     WHERE NULLIF(LTRIM(RTRIM(CONVERT(NVARCHAR(200), APPLICATIONID))), N'') IS NULL
 )
-    THROW 51002, 'Masking stopped: every row must have an APPLICATIONID so substitutions can be applied safely.', 1;
+BEGIN
+    RAISERROR('Masking stopped: every row must have an APPLICATIONID so substitutions can be applied safely.', 16, 1);
+    RETURN;
+END;
 
 IF EXISTS
 (
@@ -30,7 +39,10 @@ IF EXISTS
     GROUP BY APPLICATIONID
     HAVING COUNT_BIG(*) > 1
 )
-    THROW 51003, 'Masking stopped: APPLICATIONID must be unique in CORE_FLEX_ALL_APPS_MASTER.', 1;
+BEGIN
+    RAISERROR('Masking stopped: APPLICATIONID must be unique in CORE_FLEX_ALL_APPS_MASTER.', 16, 1);
+    RETURN;
+END;
 
 SELECT @NameCellCount = COUNT_BIG(*)
 FROM
@@ -51,18 +63,13 @@ BEGIN
     SELECT
         DB_NAME() AS TargetDatabase,
         COUNT_BIG(*) AS RowsInTable,
-        @NameCellCount AS PopulatedNameCells,
-        CAST(1000 AS INT) AS AvailableUniqueSyntheticNames,
-        CASE WHEN @NameCellCount <= 1000 THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END AS NamePoolCapacitySufficient,
+        @NameCellCount AS UniqueNameSubstitutionsRequired,
         CAST(0 AS BIT) AS ChangesApplied,
         N'Preview only. Set @ApplyMasking = 1 after confirming this is an isolated, backed-up database copy.' AS Message
     FROM dbo.CORE_FLEX_ALL_APPS_MASTER;
 
     RETURN;
 END;
-
-IF @NameCellCount > 1000
-    THROW 51004, 'Masking stopped: more than 1000 populated customer/seller name cells require unique substitutions. Expand the synthetic name pool before applying.', 1;
 
 BEGIN TRY
     BEGIN TRANSACTION;
@@ -91,6 +98,12 @@ BEGIN TRY
         FamilyName NVARCHAR(40) NOT NULL
     );
 
+    DECLARE @MiddleNames TABLE
+    (
+        NameId INT NOT NULL PRIMARY KEY,
+        MiddleName NVARCHAR(40) NOT NULL
+    );
+
     INSERT @GivenNames (NameId, GivenName)
     VALUES
         (1, N'Amira'), (2, N'Noura'), (3, N'Layan'), (4, N'Sami'), (5, N'Rami'),
@@ -110,30 +123,59 @@ BEGIN TRY
         (16, N'Karem'), (17, N'Lorne'), (18, N'Tarek'), (19, N'Balian'), (20, N'Khalan'),
         (21, N'Mavri'), (22, N'Ordan'), (23, N'Salek'), (24, N'Jorin'), (25, N'Darzi');
 
+    INSERT @MiddleNames (NameId, MiddleName)
+    VALUES
+        (1, N'Adel'), (2, N'Basil'), (3, N'Jude'), (4, N'Kamal'), (5, N'Rafi'),
+        (6, N'Zaki'), (7, N'Yasir'), (8, N'Iman'), (9, N'Fadi'), (10, N'Rashid'),
+        (11, N'Kian'), (12, N'Salim'), (13, N'Aziz'), (14, N'Anwar'), (15, N'Faris'),
+        (16, N'Naim'), (17, N'Jamil'), (18, N'Tamir'), (19, N'Zahir'), (20, N'Rayan'),
+        (21, N'Kareem'), (22, N'Farid'), (23, N'Idris'), (24, N'Malik'), (25, N'Nabil');
+
     CREATE TABLE #SyntheticNames
     (
-        NameSequence INT NOT NULL PRIMARY KEY,
+        NameSequence BIGINT NOT NULL PRIMARY KEY,
         FakeName NVARCHAR(100) NOT NULL UNIQUE
     );
 
-    ;WITH NameCandidates AS
+    ;WITH NameNumbers AS
+    (
+        SELECT CONVERT(BIGINT, 1) AS NameSequence
+        WHERE @NameCellCount > 0
+        UNION ALL
+        SELECT NameSequence + 1
+        FROM NameNumbers
+        WHERE NameSequence < @NameCellCount
+    ),
+    NameCandidates AS
     (
         SELECT
-            ROW_NUMBER() OVER (ORDER BY NEWID()) AS NameSequence,
-            given.GivenName + N' ' + family.FamilyName AS FakeName
-        FROM @GivenNames AS given
-        CROSS JOIN @FamilyNames AS family
+            numbers.NameSequence,
+            CASE
+                WHEN numbers.NameSequence <= 1000
+                    THEN given.GivenName + N' ' + family.FamilyName
+                WHEN numbers.NameSequence <= 26000
+                    THEN given.GivenName + N' ' + middle.MiddleName + N' ' + family.FamilyName
+                ELSE given.GivenName + N' ' + middle.MiddleName + N' ' + family.FamilyName
+                    + N' ' + CONVERT(NVARCHAR(20), numbers.NameSequence)
+            END AS FakeName
+        FROM NameNumbers AS numbers
+        INNER JOIN @GivenNames AS given
+            ON given.NameId = CONVERT(INT, ((numbers.NameSequence - 1) % 40) + 1)
+        INNER JOIN @FamilyNames AS family
+            ON family.NameId = CONVERT(INT, (((numbers.NameSequence - 1) / 40) % 25) + 1)
+        INNER JOIN @MiddleNames AS middle
+            ON middle.NameId = CONVERT(INT, (((numbers.NameSequence - 1) / 1000) % 25) + 1)
     )
     INSERT #SyntheticNames (NameSequence, FakeName)
-    SELECT CONVERT(INT, NameSequence), FakeName
+    SELECT NameSequence, FakeName
     FROM NameCandidates
-    WHERE NameSequence <= 1000;
+    OPTION (MAXRECURSION 0);
 
     CREATE TABLE #NameAssignments
     (
         APPLICATIONID NVARCHAR(200) NOT NULL,
         NameSlot TINYINT NOT NULL,
-        NameSequence INT NOT NULL,
+        NameSequence BIGINT NOT NULL,
         PRIMARY KEY (APPLICATIONID, NameSlot)
     );
 
@@ -168,7 +210,7 @@ BEGIN TRY
         FROM NameCells
     )
     INSERT #NameAssignments (APPLICATIONID, NameSlot, NameSequence)
-    SELECT APPLICATIONID, NameSlot, CONVERT(INT, NameSequence)
+    SELECT APPLICATIONID, NameSlot, NameSequence
     FROM NumberedNameCells;
 
     DECLARE @CountryPool TABLE
@@ -250,6 +292,14 @@ BEGIN TRY
         CUSTOMERNAME2 = COALESCE(name2.FakeName, master.CUSTOMERNAME2),
         CUSTOMERNAME3 = COALESCE(name3.FakeName, master.CUSTOMERNAME3),
         CUSTOMERNAME4 = COALESCE(name4.FakeName, master.CUSTOMERNAME4),
+        DATEOFBIRTH1 = CASE WHEN NULLIF(LTRIM(RTRIM(CONVERT(NVARCHAR(4000), master.DATEOFBIRTH1))), N'') IS NULL
+            THEN master.DATEOFBIRTH1 ELSE CONVERT(CHAR(10), DATEADD(DAY, CONVERT(INT, (rows.MaskRow * 37) % 12000), CONVERT(DATE, '19700101')), 23) END,
+        DATEOFBIRTH2 = CASE WHEN NULLIF(LTRIM(RTRIM(CONVERT(NVARCHAR(4000), master.DATEOFBIRTH2))), N'') IS NULL
+            THEN master.DATEOFBIRTH2 ELSE CONVERT(CHAR(10), DATEADD(DAY, CONVERT(INT, (rows.MaskRow * 37 + 211) % 12000), CONVERT(DATE, '19700101')), 23) END,
+        DATEOFBIRTH3 = CASE WHEN NULLIF(LTRIM(RTRIM(CONVERT(NVARCHAR(4000), master.DATEOFBIRTH3))), N'') IS NULL
+            THEN master.DATEOFBIRTH3 ELSE CONVERT(CHAR(10), DATEADD(DAY, CONVERT(INT, (rows.MaskRow * 37 + 422) % 12000), CONVERT(DATE, '19700101')), 23) END,
+        DATEOFBIRTH4 = CASE WHEN NULLIF(LTRIM(RTRIM(CONVERT(NVARCHAR(4000), master.DATEOFBIRTH4))), N'') IS NULL
+            THEN master.DATEOFBIRTH4 ELSE CONVERT(CHAR(10), DATEADD(DAY, CONVERT(INT, (rows.MaskRow * 37 + 633) % 12000), CONVERT(DATE, '19700101')), 23) END,
         PASSPORTNUMBER = CASE WHEN NULLIF(LTRIM(RTRIM(CONVERT(NVARCHAR(4000), master.PASSPORTNUMBER))), N'') IS NULL
             THEN master.PASSPORTNUMBER ELSE N'TSTP' + CONVERT(NVARCHAR(20), rows.MaskRow) END,
         NATIONALITY2 = COALESCE(country2.CountryName, master.NATIONALITY2),
@@ -260,11 +310,11 @@ BEGIN TRY
         MOBILENUMBER = CASE WHEN NULLIF(LTRIM(RTRIM(CONVERT(NVARCHAR(4000), master.MOBILENUMBER))), N'') IS NULL
             THEN master.MOBILENUMBER ELSE N'000' + RIGHT(N'0000000' + CONVERT(NVARCHAR(20), rows.MaskRow), 7) END,
         MAILING_COUNTRY = COALESCE(mailCountry.CountryName, master.MAILING_COUNTRY),
-        CURRENTEMPLOYER1 = CASE WHEN NULLIF(LTRIM(RTRIM(CONVERT(NVARCHAR(4000), master.CURRENTEMPLOYER1))), N'') IS NULL THEN master.CURRENTEMPLOYER1 ELSE CHOOSE((rows.MaskRow % 8) + 1, N'Northstar Services', N'Bluehaven Trading', N'Cedar Bay Logistics', N'Summit Grove Consulting', N'Silverline Systems', N'Oakbridge Retail', N'Westmere Solutions', N'Pinecrest Partners') END,
-        CURRENTEMPLOYER2 = CASE WHEN NULLIF(LTRIM(RTRIM(CONVERT(NVARCHAR(4000), master.CURRENTEMPLOYER2))), N'') IS NULL THEN master.CURRENTEMPLOYER2 ELSE CHOOSE(((rows.MaskRow + 2) % 8) + 1, N'Northstar Services', N'Bluehaven Trading', N'Cedar Bay Logistics', N'Summit Grove Consulting', N'Silverline Systems', N'Oakbridge Retail', N'Westmere Solutions', N'Pinecrest Partners') END,
-        CURRENTEMPLOYER3 = CASE WHEN NULLIF(LTRIM(RTRIM(CONVERT(NVARCHAR(4000), master.CURRENTEMPLOYER3))), N'') IS NULL THEN master.CURRENTEMPLOYER3 ELSE CHOOSE(((rows.MaskRow + 4) % 8) + 1, N'Northstar Services', N'Bluehaven Trading', N'Cedar Bay Logistics', N'Summit Grove Consulting', N'Silverline Systems', N'Oakbridge Retail', N'Westmere Solutions', N'Pinecrest Partners') END,
-        CURRENTEMPLOYER4 = CASE WHEN NULLIF(LTRIM(RTRIM(CONVERT(NVARCHAR(4000), master.CURRENTEMPLOYER4))), N'') IS NULL THEN master.CURRENTEMPLOYER4 ELSE CHOOSE(((rows.MaskRow + 6) % 8) + 1, N'Northstar Services', N'Bluehaven Trading', N'Cedar Bay Logistics', N'Summit Grove Consulting', N'Silverline Systems', N'Oakbridge Retail', N'Westmere Solutions', N'Pinecrest Partners') END,
-        EMPLOYMENTTYPE = CASE WHEN NULLIF(LTRIM(RTRIM(CONVERT(NVARCHAR(4000), master.EMPLOYMENTTYPE))), N'') IS NULL THEN master.EMPLOYMENTTYPE ELSE CHOOSE((rows.MaskRow % 5) + 1, N'Salaried', N'Self-Employed', N'Business Owner', N'Contractor', N'Consultant') END,
+        CURRENTEMPLOYER1 = CASE WHEN NULLIF(LTRIM(RTRIM(CONVERT(NVARCHAR(4000), master.CURRENTEMPLOYER1))), N'') IS NULL THEN master.CURRENTEMPLOYER1 ELSE CASE CONVERT(INT, rows.MaskRow % 8) WHEN 0 THEN N'Northstar Services' WHEN 1 THEN N'Bluehaven Trading' WHEN 2 THEN N'Cedar Bay Logistics' WHEN 3 THEN N'Summit Grove Consulting' WHEN 4 THEN N'Silverline Systems' WHEN 5 THEN N'Oakbridge Retail' WHEN 6 THEN N'Westmere Solutions' ELSE N'Pinecrest Partners' END END,
+        CURRENTEMPLOYER2 = CASE WHEN NULLIF(LTRIM(RTRIM(CONVERT(NVARCHAR(4000), master.CURRENTEMPLOYER2))), N'') IS NULL THEN master.CURRENTEMPLOYER2 ELSE CASE CONVERT(INT, (rows.MaskRow + 2) % 8) WHEN 0 THEN N'Northstar Services' WHEN 1 THEN N'Bluehaven Trading' WHEN 2 THEN N'Cedar Bay Logistics' WHEN 3 THEN N'Summit Grove Consulting' WHEN 4 THEN N'Silverline Systems' WHEN 5 THEN N'Oakbridge Retail' WHEN 6 THEN N'Westmere Solutions' ELSE N'Pinecrest Partners' END END,
+        CURRENTEMPLOYER3 = CASE WHEN NULLIF(LTRIM(RTRIM(CONVERT(NVARCHAR(4000), master.CURRENTEMPLOYER3))), N'') IS NULL THEN master.CURRENTEMPLOYER3 ELSE CASE CONVERT(INT, (rows.MaskRow + 4) % 8) WHEN 0 THEN N'Northstar Services' WHEN 1 THEN N'Bluehaven Trading' WHEN 2 THEN N'Cedar Bay Logistics' WHEN 3 THEN N'Summit Grove Consulting' WHEN 4 THEN N'Silverline Systems' WHEN 5 THEN N'Oakbridge Retail' WHEN 6 THEN N'Westmere Solutions' ELSE N'Pinecrest Partners' END END,
+        CURRENTEMPLOYER4 = CASE WHEN NULLIF(LTRIM(RTRIM(CONVERT(NVARCHAR(4000), master.CURRENTEMPLOYER4))), N'') IS NULL THEN master.CURRENTEMPLOYER4 ELSE CASE CONVERT(INT, (rows.MaskRow + 6) % 8) WHEN 0 THEN N'Northstar Services' WHEN 1 THEN N'Bluehaven Trading' WHEN 2 THEN N'Cedar Bay Logistics' WHEN 3 THEN N'Summit Grove Consulting' WHEN 4 THEN N'Silverline Systems' WHEN 5 THEN N'Oakbridge Retail' WHEN 6 THEN N'Westmere Solutions' ELSE N'Pinecrest Partners' END END,
+        EMPLOYMENTTYPE = CASE WHEN NULLIF(LTRIM(RTRIM(CONVERT(NVARCHAR(4000), master.EMPLOYMENTTYPE))), N'') IS NULL THEN master.EMPLOYMENTTYPE ELSE CASE CONVERT(INT, rows.MaskRow % 5) WHEN 0 THEN N'Salaried' WHEN 1 THEN N'Self-Employed' WHEN 2 THEN N'Business Owner' WHEN 3 THEN N'Contractor' ELSE N'Consultant' END END,
         RESI_TEL_CODE = CASE WHEN NULLIF(LTRIM(RTRIM(CONVERT(NVARCHAR(4000), master.RESI_TEL_CODE))), N'') IS NULL THEN master.RESI_TEL_CODE ELSE N'000' END,
         RESI_TEL_NUM = CASE WHEN NULLIF(LTRIM(RTRIM(CONVERT(NVARCHAR(4000), master.RESI_TEL_NUM))), N'') IS NULL
             THEN master.RESI_TEL_NUM ELSE N'000' + RIGHT(N'0000000' + CONVERT(NVARCHAR(20), rows.MaskRow + 1), 7) END,
@@ -274,7 +324,7 @@ BEGIN TRY
         HC_TEL_NUM = CASE WHEN NULLIF(LTRIM(RTRIM(CONVERT(NVARCHAR(4000), master.HC_TEL_NUM))), N'') IS NULL
             THEN master.HC_TEL_NUM ELSE N'000' + RIGHT(N'0000000' + CONVERT(NVARCHAR(20), rows.MaskRow + 2), 7) END,
         SELLERNAME = COALESCE(seller.FakeName, master.SELLERNAME),
-        DEVELOPER = CASE WHEN NULLIF(LTRIM(RTRIM(CONVERT(NVARCHAR(4000), master.DEVELOPER))), N'') IS NULL THEN master.DEVELOPER ELSE CHOOSE((rows.MaskRow % 8) + 1, N'Northstar Developments', N'Bluehaven Properties', N'Cedar Bay Estates', N'Summit Grove Homes', N'Silverline Communities', N'Oakbridge Living', N'Westmere Developments', N'Pinecrest Properties') END,
+        DEVELOPER = CASE WHEN NULLIF(LTRIM(RTRIM(CONVERT(NVARCHAR(4000), master.DEVELOPER))), N'') IS NULL THEN master.DEVELOPER ELSE CASE CONVERT(INT, rows.MaskRow % 8) WHEN 0 THEN N'Northstar Developments' WHEN 1 THEN N'Bluehaven Properties' WHEN 2 THEN N'Cedar Bay Estates' WHEN 3 THEN N'Summit Grove Homes' WHEN 4 THEN N'Silverline Communities' WHEN 5 THEN N'Oakbridge Living' WHEN 6 THEN N'Westmere Developments' ELSE N'Pinecrest Properties' END END,
         OFFICE_TEL_CODE = CASE WHEN NULLIF(LTRIM(RTRIM(CONVERT(NVARCHAR(4000), master.OFFICE_TEL_CODE))), N'') IS NULL THEN master.OFFICE_TEL_CODE ELSE N'000' END,
         FAX_NUMBER = CASE WHEN NULLIF(LTRIM(RTRIM(CONVERT(NVARCHAR(4000), master.FAX_NUMBER))), N'') IS NULL
             THEN master.FAX_NUMBER ELSE N'000' + RIGHT(N'0000000' + CONVERT(NVARCHAR(20), rows.MaskRow + 3), 7) END,
@@ -284,7 +334,7 @@ BEGIN TRY
             THEN master.PERSONAL_EMAIL ELSE N'user' + CONVERT(NVARCHAR(20), rows.MaskRow) + N'@example.invalid' END,
         OFFICE_EMAIL = CASE WHEN NULLIF(LTRIM(RTRIM(CONVERT(NVARCHAR(4000), master.OFFICE_EMAIL))), N'') IS NULL
             THEN master.OFFICE_EMAIL ELSE N'work' + CONVERT(NVARCHAR(20), rows.MaskRow) + N'@example.invalid' END,
-        EDUCATION4 = CASE WHEN NULLIF(LTRIM(RTRIM(CONVERT(NVARCHAR(4000), master.EDUCATION4))), N'') IS NULL THEN master.EDUCATION4 ELSE CHOOSE((rows.MaskRow % 5) + 1, N'Bachelor Degree', N'Master Degree', N'Diploma', N'Professional Certificate', N'High School') END
+        EDUCATION4 = CASE WHEN NULLIF(LTRIM(RTRIM(CONVERT(NVARCHAR(4000), master.EDUCATION4))), N'') IS NULL THEN master.EDUCATION4 ELSE CASE CONVERT(INT, rows.MaskRow % 5) WHEN 0 THEN N'Bachelor Degree' WHEN 1 THEN N'Master Degree' WHEN 2 THEN N'Diploma' WHEN 3 THEN N'Professional Certificate' ELSE N'High School' END END
     FROM dbo.CORE_FLEX_ALL_APPS_MASTER AS master
     INNER JOIN #MaskRows AS rows
         ON rows.APPLICATIONID = master.APPLICATIONID
@@ -327,9 +377,18 @@ BEGIN TRY
         CAST(1 AS BIT) AS ChangesApplied;
 END TRY
 BEGIN CATCH
+    DECLARE @ErrorMessage NVARCHAR(4000);
+    DECLARE @ErrorSeverity INT;
+    DECLARE @ErrorState INT;
+
+    SELECT
+        @ErrorMessage = ERROR_MESSAGE(),
+        @ErrorSeverity = ERROR_SEVERITY(),
+        @ErrorState = ERROR_STATE();
+
     IF @@TRANCOUNT > 0
         ROLLBACK TRANSACTION;
 
-    THROW;
+    RAISERROR(@ErrorMessage, @ErrorSeverity, @ErrorState);
 END CATCH;
 GO
