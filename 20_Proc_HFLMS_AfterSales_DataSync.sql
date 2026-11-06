@@ -80,15 +80,29 @@ BEGIN
         m.BUILTUPAREA AS BUILTUPAREA,
         m.PROPERTYNAME AS PROPERTYNAME
     FROM dbo.CORE_FLEX_ALL_APPS_MASTER AS m
+    OUTER APPLY
+    (
+        SELECT
+            CASE
+                WHEN ISDATE(CONVERT(NVARCHAR(50), m.DATEOFBIRTH1)) = 1
+                    THEN CONVERT(DATETIME, CONVERT(NVARCHAR(50), m.DATEOFBIRTH1))
+                ELSE NULL
+            END AS ParsedDateOfBirth,
+            CASE
+                WHEN ISDATE(CONVERT(NVARCHAR(50), m.LASTUPDATED)) = 1
+                    THEN CONVERT(DATETIME, CONVERT(NVARCHAR(50), m.LASTUPDATED))
+                ELSE NULL
+            END AS ParsedLastUpdated
+    ) AS parsedDates
     WHERE
         (NULLIF(LTRIM(RTRIM(@ApplicationId)), N'') IS NULL
             OR m.APPLICATIONID LIKE N'%' + LTRIM(RTRIM(@ApplicationId)) + N'%')
         AND (NULLIF(LTRIM(RTRIM(@CustomerId)), N'') IS NULL
             OR m.CUSTOMERID LIKE N'%' + LTRIM(RTRIM(@CustomerId)) + N'%')
         AND (NULLIF(LTRIM(RTRIM(@DateOfBirth)), N'') IS NULL
-            OR CONVERT(NVARCHAR(10), TRY_CONVERT(DATE, m.DATEOFBIRTH1), 23)
+            OR CONVERT(NVARCHAR(10), parsedDates.ParsedDateOfBirth, 23)
                 LIKE N'%' + LTRIM(RTRIM(@DateOfBirth)) + N'%'
-            OR CONVERT(NVARCHAR(10), TRY_CONVERT(DATE, m.DATEOFBIRTH1), 103)
+            OR CONVERT(NVARCHAR(10), parsedDates.ParsedDateOfBirth, 103)
                 LIKE N'%' + LTRIM(RTRIM(@DateOfBirth)) + N'%')
         AND (NULLIF(LTRIM(RTRIM(@CustomerName)), N'') IS NULL
             OR m.CUSTOMERNAME1 LIKE N'%' + LTRIM(RTRIM(@CustomerName)) + N'%'
@@ -107,7 +121,7 @@ BEGIN
             OR m.MOBILENUMBER LIKE N'%' + LTRIM(RTRIM(@MobileNo)) + N'%')
     ORDER BY
         CASE WHEN m.APPLICATIONID = LTRIM(RTRIM(@ApplicationId)) THEN 0 ELSE 1 END,
-        TRY_CONVERT(DATETIME2, m.LASTUPDATED) DESC;
+        parsedDates.ParsedLastUpdated DESC;
 END;
 GO
 --EXEC dbo.Proc_HFLMS_AfterSales_GetDataFromAllAppsMaster @ApplicationId = N'APP12345';
