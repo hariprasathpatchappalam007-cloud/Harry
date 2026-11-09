@@ -1,23 +1,7 @@
-SELECT STUFF((
-    SELECT
-        ', ' + COLUMN_NAME + ' ' + DATA_TYPE +
-        CASE
-            WHEN DATA_TYPE IN ('varchar','char','nvarchar','nchar','varbinary','binary')
-            THEN '(' +
-                CASE
-                    WHEN CHARACTER_MAXIMUM_LENGTH = -1 THEN 'MAX'
-                    WHEN DATA_TYPE IN ('nvarchar','nchar')
-                    THEN CAST(CHARACTER_MAXIMUM_LENGTH / 2 AS VARCHAR(10))
-                    ELSE CAST(CHARACTER_MAXIMUM_LENGTH AS VARCHAR(10))
-                END + ')'
-            WHEN DATA_TYPE IN ('decimal','numeric')
-            THEN '(' + CAST(NUMERIC_PRECISION AS VARCHAR(10))
-                 + ',' + CAST(NUMERIC_SCALE AS VARCHAR(10)) + ')'
-            ELSE ''
-        END +
-        CASE WHEN IS_NULLABLE = 'NO' THEN ' NOT NULL' ELSE ' NULL' END
-    FROM INFORMATION_SCHEMA.COLUMNS
-    WHERE TABLE_NAME = 'Core_flex_all_apps_master'
-    ORDER BY ORDINAL_POSITION
-    FOR XML PATH(''), TYPE
-).value('.', 'VARCHAR(MAX)'), 1, 2, '') AS TableStructure;
+Dear Shahzad,
+
+Good to hear that the DDA cancellation statuses have been updated successfully in HFLMS. Thank you for confirming the cancellation status.
+
+Regarding the reported DDA registration status discrepancies, these are very old cases, dating back approximately 1.5 to 2 years. We are coordinating with our IT colleagues to investigate the issue and identify the reason for the status mismatch.
+
+We will keep you updated on the findings.
