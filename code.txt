@@ -1,3 +1,8 @@
-In Scope
+Dear Salil,
 
-Capturing and transmitting customer consent from HFLMS to CRM for customers onboarded to T24 through the New-to-Bank (NTB) customer onboarding process.
+As discussed, the following updates have been incorporated into the HFLMS FSD:
+
+1. Added the In-Scope section under Section 9.
+2. Removed the ETL data sync section from the Out-of-Scope items.
+
+Kindly review the updated FSD and provide your sign-off so we can proceed further.
