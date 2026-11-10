@@ -1,0 +1,271 @@
+SELECT DDA_QUERY.*
+FROM (
+SELECT
+    NVL(DMAIN.SENDINGINSTITUTIONREFERENCENO,
+        NVL(C310.SendingInstitutionReferenceNo,
+            NVL(C400.SendingInstitutionReferenceNo, C300.SendingInstitutionReferenceNo))) AS DDAinternalReferenceNumer,
+    NVL(DMAIN.PayerIdentificationNoWithOriginator,
+        NVL(d310.PayerIdentificationNoWithOriginator, D300.PayerIdentificationNoWithOriginator)) AS ApplicationID,
+    NVL(DMAIN.MandateReference,
+        NVL(d310.MandateReference, NVL(D300.MandateReference, ''))) AS DDAreferenceNo,
+    CASE
+        WHEN DMAIN.STATUS IS NULL THEN
+            CASE
+                WHEN D310.INSTRUCTIONCODE IS NULL THEN
+                    CASE
+                        WHEN C300.DDSFILENAME IS NULL THEN 'DDA INITIATION - DDS FILE NOT GENERATED'
+                        ELSE
+                            CASE
+                                WHEN C300.CBRESPONSETYPE IS NULL AND C300.DDSFILENAME IS NOT NULL
+                                    THEN ' FILE GENERATED BUT DDA INITIATION CENTRAL BANK RESPONSE PENDING'
+                                ELSE
+                                    CASE
+                                        WHEN C300.CBRESPONSETYPE = 'A' THEN 'DDA REGISTRATION CONFIRMATION PENDING'
+                                        ELSE
+                                            CASE
+                                                WHEN C300.CBRESPONSETYPE = 'N'
+                                                    THEN 'DDA REGISTRATION REJECTED BY CENTRAL BANK'
+                                            END
+                                    END
+                            END
+                    END
+                WHEN D310.INSTRUCTIONCODE = 'ACCP' THEN 'ACCP - ACCEPTED'
+                ELSE 'REJECTED'
+            END
+        ELSE
+            CASE
+                WHEN D400.MandateReference IS NULL THEN DMAIN.Status
+                ELSE
+                    CASE
+                        WHEN C400.CBRESPONSETYPE IS NULL THEN
+                            CASE
+                                WHEN C400.DDSFILENAME IS NULL THEN 'DDA CANCELLATION - DDS FILE NOT GENERATED'
+                                ELSE
+                                    CASE
+                                        WHEN C400.DDSFILENAME IS NOT NULL THEN ' DDA CANCELLATION DDS FILE GENERATED'
+                                    END
+                            END
+                        ELSE
+                            CASE
+                                WHEN NVL(C400.CBRESPONSETYPE, '') = 'A' THEN ' CANCELLED'
+                                ELSE
+                                    CASE
+                                        WHEN NVL(C400.CBRESPONSETYPE, '') = 'N'
+                                            THEN 'DDA CANCELLATION REJECTED BY CENTRAL BANK'
+                                    END
+                            END
+                    END
+            END
+    END AS DDAStatus,
+    CASE
+        WHEN DMAIN.STATUS IS NULL THEN
+            CASE
+                WHEN D310.INSTRUCTIONCODE IS NULL THEN
+                    CASE
+                        WHEN C300.DDSFILENAME IS NULL THEN 'DDA INITIATION - DDS FILE NOT GENERATED'
+                        ELSE
+                            CASE
+                                WHEN C300.CBRESPONSETYPE IS NULL AND C300.DDSFILENAME IS NOT NULL
+                                    THEN ' FILE GENERATED BUT DDA INITIATION CENTRAL BANK RESPONSE PENDING'
+                                ELSE
+                                    CASE
+                                        WHEN C300.CBRESPONSETYPE = 'A' THEN 'DDA CONFIRMATION PENDING'
+                                        ELSE
+                                            CASE
+                                                WHEN C300.CBRESPONSETYPE = 'N'
+                                                    THEN 'DDA REGISTRATION REJECTED BY CENTRAL BANK, '
+                                                        || C300.CBRESPONSE || ' ' || NAK300.ERRORDESCRIPTION
+                                            END
+                                    END
+                            END
+                    END
+                WHEN D310.INSTRUCTIONCODE = 'ACCP' THEN 'ACCP - ACCEPTED'
+                ELSE RR.Code || '-' || RR.Description
+            END
+        ELSE
+            CASE
+                WHEN D400.MandateReference IS NULL THEN DMAIN.Status
+                ELSE
+                    CASE
+                        WHEN C400.CBRESPONSETYPE IS NULL THEN
+                            CASE
+                                WHEN C400.DDSFILENAME IS NULL THEN 'DDA CANCELLATION - DDS FILE NOT GENERATED'
+                                ELSE
+                                    CASE
+                                        WHEN C400.DDSFILENAME IS NOT NULL THEN ' DDA CANCELLATION DDS FILE GENERATED'
+                                    END
+                            END
+                        ELSE
+                            CASE
+                                WHEN NVL(C400.CBRESPONSETYPE, '') = 'A'
+                                    THEN ' CANCELLED' || ', ' || CRC.CancellationRCode || '-' || CRC.CancellationRCodeDescription
+                                ELSE
+                                    CASE
+                                        WHEN NVL(C400.CBRESPONSETYPE, '') = 'N'
+                                            THEN 'DDA CANCELLATION REJECTED BY CENTRAL BANK, '
+                                                || C400.CBRESPONSE || ' ' || NAK400.ERRORDESCRIPTION
+                                    END
+                            END
+                    END
+            END
+    END AS DDARemarks,
+    NVL(C400.CBRESPONSEDATE, NVL(c310.createddate, C300.CBRESPONSEDATE)) AS CentralBankResponseDate,
+    CASE
+        WHEN DMAIN.DDAIssuedFor IS NULL THEN
+            CASE
+                WHEN D310.DDAIssuedFor IS NULL THEN
+                    NVL(D300.DDAIssuedFor, '') || ' ' || NVL(PC2.DDAPurposeCodeDescription, '')
+                ELSE
+                    NVL(D310.DDAIssuedFor, '') || '-' || NVL(PC1.DDAPurposeCodeDescription, '')
+            END
+        ELSE
+            (NVL(DMAIN.DDAIssuedFor, '') || '-' || NVL(PC.DDAPurposeCodeDescription, ''))
+    END AS Purpose, -- FREQUENCY
+    CASE NVL(DMAIN.paymentfrequency, NVL(D310.paymentfrequency, D300.paymentfrequency))
+        WHEN 'D' THEN 'DAILY'
+        WHEN 'W' THEN 'WEEKLY'
+        WHEN 'M' THEN 'MONTHLY'
+        WHEN 'T' THEN 'TWO MONTHLY'
+        WHEN 'Q' THEN 'QUARTERLY'
+        WHEN 'F' THEN 'FOUR MONTHLY'
+        WHEN 'H' THEN 'HALF YEARLY'
+        WHEN 'A' THEN 'ANNUALLY'
+    END AS FREQUENCY,
+    'COMBINATION' AS SOURCE
+FROM DDS_OUT_300_CONTROL C300
+LEFT JOIN DDS_OUT_300_DETAIL D300
+    ON C300.OUT_300_FILEID = D300.OUT_300_FILEID
+LEFT JOIN DDS_IN_310_DETAIL D310
+    ON C300.UAEDDSFILEID = D310.UAEDDSFILEIDFORDAR
+LEFT JOIN DDS_IN_310_CONTROL C310
+    ON C310.IN_310_FILEID = D310.IN_310_FILEID
+LEFT JOIN DDS_DDAMAINTENANCE DMAIN
+    ON D310.MandateReference = DMAIN.MandateReference
+LEFT JOIN DDS_OUT_400_DETAIL D400
+    ON D400.MandateReference = DMAIN.MandateReference
+LEFT JOIN DDS_OUT_400_CONTROL C400
+    ON D400.OUT_400_FILEID = C400.OUT_400_FILEID
+LEFT JOIN DDS_DDACANCELLATIONREASONCODE CRC
+    ON CRC.CancellationRCode = D400.DDACancellationReasonCode
+LEFT JOIN DDS_DDAREQUESTREJECTREASON RR
+    ON RR.CODE = D310.INSTRUCTIONCODE
+LEFT JOIN DDS_DDAPURPOSECODES PC
+    ON DMAIN.DDAIssuedFor = PC.DDAPurposeCode
+LEFT JOIN DDS_DDAPURPOSECODES PC1
+    ON D310.DDAIssuedFor = PC1.DDAPurposeCode
+LEFT JOIN DDS_DDAPURPOSECODES PC2
+    ON D300.DDAIssuedFor = PC2.DDAPurposeCode
+LEFT JOIN DDS_NAKERRORDETAILS NAK300
+    ON NAK300.FILEID = C300.OUT_300_FILEID
+    AND NAK300.FILETYPE = '300'
+LEFT JOIN DDS_NAKERRORDETAILS NAK400
+    ON NAK400.FILEID = C400.OUT_400_FILEID
+    AND NAK400.FILETYPE = '400'
+WHERE NVL(NVL(DMAIN.SOURCE, ''), NVL(C300.SOURCE, '')) = 'HFLMS'
+   OR NVL(DMAIN.PayerIdentificationNoWithOriginator,
+          NVL(d310.PayerIdentificationNoWithOriginator, D300.PayerIdentificationNoWithOriginator)) LIKE '%MF%'
+
+UNION
+
+SELECT
+    NVL(DMAIN.SENDINGINSTITUTIONREFERENCENO, '') AS DDAINTERNALREFERENCENUMER,
+    PayerIdentificationNoWithOriginator AS APPLICATIONID,
+    MandateReference AS DDAREFERENCENO,
+    STATUS AS DDASTATUS,
+    Status AS DDAREMARKS,
+    DDACOMMENCEMENTDATE AS CENTRALBANKRESPONSEDATE,
+    DDAIssuedFor AS PURPOSE,
+    paymentfrequency AS FREQUENCY,
+    'MAINTENANCE' AS SOURCE
+FROM DDS_DDAMAINTENANCE DMAIN
+WHERE (
+        DMAIN.PAYERIDENTIFICATIONNOWITHORIGINATOR LIKE '%MF%'
+        OR DMAIN.SOURCE = 'HFLMS'
+      )
+  AND NOT EXISTS
+      (
+          SELECT 1
+          FROM DDS_OUT_300_CONTROL C300
+          LEFT JOIN DDS_OUT_300_DETAIL D300
+              ON C300.OUT_300_FILEID = D300.OUT_300_FILEID
+          LEFT JOIN DDS_IN_310_DETAIL D310
+              ON C300.UAEDDSFILEID = D310.UAEDDSFILEIDFORDAR
+          LEFT JOIN DDS_IN_310_CONTROL C310
+              ON C310.IN_310_FILEID = D310.IN_310_FILEID
+          LEFT JOIN DDS_DDAMAINTENANCE DMAIN_COMBO
+              ON D310.MandateReference = DMAIN_COMBO.MandateReference
+          LEFT JOIN DDS_OUT_400_DETAIL D400
+              ON D400.MandateReference = DMAIN_COMBO.MandateReference
+          LEFT JOIN DDS_OUT_400_CONTROL C400
+              ON D400.OUT_400_FILEID = C400.OUT_400_FILEID
+          LEFT JOIN DDS_DDACANCELLATIONREASONCODE CRC
+              ON CRC.CancellationRCode = D400.DDACancellationReasonCode
+          LEFT JOIN DDS_DDAREQUESTREJECTREASON RR
+              ON RR.CODE = D310.INSTRUCTIONCODE
+          LEFT JOIN DDS_DDAPURPOSECODES PC
+              ON DMAIN_COMBO.DDAIssuedFor = PC.DDAPurposeCode
+          LEFT JOIN DDS_DDAPURPOSECODES PC1
+              ON D310.DDAIssuedFor = PC1.DDAPurposeCode
+          LEFT JOIN DDS_DDAPURPOSECODES PC2
+              ON D300.DDAIssuedFor = PC2.DDAPurposeCode
+          LEFT JOIN DDS_NAKERRORDETAILS NAK300
+              ON NAK300.FILEID = C300.OUT_300_FILEID
+              AND NAK300.FILETYPE = '300'
+          LEFT JOIN DDS_NAKERRORDETAILS NAK400
+              ON NAK400.FILEID = C400.OUT_400_FILEID
+              AND NAK400.FILETYPE = '400'
+          WHERE (
+                  NVL(NVL(DMAIN_COMBO.SOURCE, ''), NVL(C300.SOURCE, '')) = 'HFLMS'
+                  OR NVL(DMAIN_COMBO.PayerIdentificationNoWithOriginator,
+                         NVL(d310.PayerIdentificationNoWithOriginator, D300.PayerIdentificationNoWithOriginator)) LIKE '%MF%'
+                )
+            AND NVL(DMAIN_COMBO.SENDINGINSTITUTIONREFERENCENO,
+                    NVL(C310.SendingInstitutionReferenceNo,
+                        NVL(C400.SendingInstitutionReferenceNo, C300.SendingInstitutionReferenceNo)))
+                = DMAIN.SENDINGINSTITUTIONREFERENCENO
+      )
+) DDA_QUERY
+WHERE DDA_QUERY.DDAINTERNALREFERENCENUMER IN (
+          '024DAR250322004V',
+          '024DAR240827004C',
+          '024DAR240827004D',
+          '024DAR2408270050',
+          '024DAR240827004Z',
+          '024DAR250322004U',
+          '024DAR250322004K',
+          '024DAR240622005I',
+          '024DAR240622005J',
+          '024DAR250912007M',
+          '024DAR250912007L',
+          '024DAR250811001Z',
+          '024DAR2508110020',
+          '024DAR241128008E',
+          '024DAR241128008D',
+          '024DAR240727005Q',
+          '024DAR240727005O',
+          '024DAR240926001Y',
+          '024DAR240827004W',
+          '024DAR240827004X'
+      )
+   OR DDA_QUERY.APPLICATIONID IN (
+          'Takaful669991136398',
+          'Takaful772803868356',
+          'Installment771014703213',
+          'Takaful138845597625',
+          'Installment137191182579',
+          'Installment668637374725',
+          'Installment723423903219',
+          'Takaful617177082212',
+          'Installment616156565863',
+          'Takaful037438350916',
+          'Installment036045216763',
+          'Takaful457126435201',
+          'Installment456092927693',
+          'Takaful214426836309',
+          'Installment212830211942',
+          'Takaful913407712685',
+          'Takaful800126574171',
+          'Installment745483247915',
+          'Takaful696549371715',
+          'Installment695190216839'
+      );
