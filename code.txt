@@ -1,7 +1,3 @@
-Dear Shahzad,
+In Scope
 
-Good to hear that the DDA cancellation statuses have been updated successfully in HFLMS. Thank you for confirming the cancellation status.
-
-Regarding the reported DDA registration status discrepancies, these are very old cases, dating back approximately 1.5 to 2 years. We are coordinating with our IT colleagues to investigate the issue and identify the reason for the status mismatch.
-
-We will keep you updated on the findings.
+Capturing and transmitting customer consent from HFLMS to CRM for customers onboarded to T24 through the New-to-Bank (NTB) customer onboarding process.
