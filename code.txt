@@ -1,8 +1,9 @@
-Dear Salil,
+Dear Sourabh,
 
-As discussed, the following updates have been incorporated into the HFLMS FSD:
+The original query shared by you did not return the expected records. However, the alternate query attached has retrieved 14 out of the 20 missing records.
 
-1. Added the In-Scope section under Section 9.
-2. Removed the ETL data sync section from the Out-of-Scope items.
+I have also incorporated the query changes as listed below.
 
-Kindly review the updated FSD and provide your sign-off so we can proceed further.
+Could you please investigate further and help identify why the remaining 6 records are still missing?
+
+Thank you for your support.
