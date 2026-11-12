@@ -164,6 +164,16 @@ LEFT JOIN DDS_NAKERRORDETAILS NAK400
 WHERE NVL(NVL(DMAIN.SOURCE, ''), NVL(C300.SOURCE, '')) = 'HFLMS'
    OR NVL(DMAIN.PayerIdentificationNoWithOriginator,
           NVL(d310.PayerIdentificationNoWithOriginator, D300.PayerIdentificationNoWithOriginator)) LIKE '%MF%'
+   OR TRIM(NVL(DMAIN.SENDINGINSTITUTIONREFERENCENO,
+               NVL(C310.SendingInstitutionReferenceNo,
+                   NVL(C400.SendingInstitutionReferenceNo, C300.SendingInstitutionReferenceNo)))) IN (
+          '024DAR250912007M',
+          '024DAR250912007L',
+          '024DAR250811001Z',
+          '024DAR2508110020',
+          '024DAR241128008E',
+          '024DAR241128008D'
+      )
 
 UNION
 
@@ -181,6 +191,14 @@ FROM DDS_DDAMAINTENANCE DMAIN
 WHERE (
         DMAIN.PAYERIDENTIFICATIONNOWITHORIGINATOR LIKE '%MF%'
         OR DMAIN.SOURCE = 'HFLMS'
+        OR TRIM(DMAIN.SENDINGINSTITUTIONREFERENCENO) IN (
+            '024DAR250912007M',
+            '024DAR250912007L',
+            '024DAR250811001Z',
+            '024DAR2508110020',
+            '024DAR241128008E',
+            '024DAR241128008D'
+        )
       )
   AND NOT EXISTS
       (
@@ -218,14 +236,24 @@ WHERE (
                   NVL(NVL(DMAIN_COMBO.SOURCE, ''), NVL(C300.SOURCE, '')) = 'HFLMS'
                   OR NVL(DMAIN_COMBO.PayerIdentificationNoWithOriginator,
                          NVL(d310.PayerIdentificationNoWithOriginator, D300.PayerIdentificationNoWithOriginator)) LIKE '%MF%'
+                  OR TRIM(NVL(DMAIN_COMBO.SENDINGINSTITUTIONREFERENCENO,
+                              NVL(C310.SendingInstitutionReferenceNo,
+                                  NVL(C400.SendingInstitutionReferenceNo, C300.SendingInstitutionReferenceNo)))) IN (
+                         '024DAR250912007M',
+                         '024DAR250912007L',
+                         '024DAR250811001Z',
+                         '024DAR2508110020',
+                         '024DAR241128008E',
+                         '024DAR241128008D'
+                     )
                 )
-            AND NVL(DMAIN_COMBO.SENDINGINSTITUTIONREFERENCENO,
-                    NVL(C310.SendingInstitutionReferenceNo,
-                        NVL(C400.SendingInstitutionReferenceNo, C300.SendingInstitutionReferenceNo)))
-                = DMAIN.SENDINGINSTITUTIONREFERENCENO
+            AND TRIM(NVL(DMAIN_COMBO.SENDINGINSTITUTIONREFERENCENO,
+                         NVL(C310.SendingInstitutionReferenceNo,
+                             NVL(C400.SendingInstitutionReferenceNo, C300.SendingInstitutionReferenceNo))))
+                = TRIM(DMAIN.SENDINGINSTITUTIONREFERENCENO)
       )
 ) DDA_QUERY
-WHERE DDA_QUERY.DDAINTERNALREFERENCENUMER IN (
+WHERE TRIM(DDA_QUERY.DDAINTERNALREFERENCENUMER) IN (
           '024DAR250322004V',
           '024DAR240827004C',
           '024DAR240827004D',
