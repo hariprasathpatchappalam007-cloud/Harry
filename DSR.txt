@@ -47,6 +47,7 @@ FROM
     INNER JOIN lead_details_finance ldf
         ON ldf.lead_no = ld.lead_no
     WHERE ld.lead_no IS NOT NULL
+      AND ld.lead_stage IN ('CUST_OL_ACCEPT', 'OPS_PMU', 'OPS_LODGMENT', 'End_Of_Process')
       AND (@FromUpdatedOnDate IS NULL OR ld.updatedon_date >= @FromUpdatedOnDate)
       AND (@ToUpdatedOnDate IS NULL OR ld.updatedon_date < DATEADD(day, 1, @ToUpdatedOnDate))
 ) AS leads;
@@ -115,6 +116,7 @@ BEGIN
     FROM #CurrentBatch batch
     INNER JOIN lead_details ld
         ON ld.lead_no = batch.lead_no
+        AND ld.lead_stage IN ('CUST_OL_ACCEPT', 'OPS_PMU', 'OPS_LODGMENT', 'End_Of_Process')
         AND (@FromUpdatedOnDate IS NULL OR ld.updatedon_date >= @FromUpdatedOnDate)
         AND (@ToUpdatedOnDate IS NULL OR ld.updatedon_date < DATEADD(day, 1, @ToUpdatedOnDate))
     INNER JOIN lead_details_finance ldf
@@ -155,6 +157,7 @@ BEGIN
     FROM #CurrentBatch batch
     INNER JOIN lead_details ld
         ON ld.lead_no = batch.lead_no
+        AND ld.lead_stage IN ('CUST_OL_ACCEPT', 'OPS_PMU', 'OPS_LODGMENT', 'End_Of_Process')
         AND (@FromUpdatedOnDate IS NULL OR ld.updatedon_date >= @FromUpdatedOnDate)
         AND (@ToUpdatedOnDate IS NULL OR ld.updatedon_date < DATEADD(day, 1, @ToUpdatedOnDate))
     INNER JOIN lead_details_finance ldf
