@@ -7,9 +7,9 @@
       2. Latest sas_scorecard method row in tamweel_archival, only when no
          matching row exists in tamweel_old
 
-    The default lead_details date range is January 1 of the current year through
-    today. The To date is inclusive; either date may be set to NULL to leave that
-    boundary open.
+    Edit @FromUpdatedOnDate and @ToUpdatedOnDate below to set the hard-coded
+    lead_details date range. The To date is inclusive; either date may be set to
+    NULL to leave that boundary open.
     @BatchSize can be adjusted to suit the server workload.
     For best performance, ensure both scorecard tables have an index beginning
     with (lead_no, method_name, createdon_date DESC), with RequestXML included
@@ -19,8 +19,8 @@
 SET NOCOUNT ON;
 
 DECLARE @BatchSize int = 500;
-DECLARE @FromUpdatedOnDate date = DATEFROMPARTS(YEAR(GETDATE()), 1, 1);
-DECLARE @ToUpdatedOnDate date = CAST(GETDATE() AS date);
+DECLARE @FromUpdatedOnDate date = '2026-01-01';
+DECLARE @ToUpdatedOnDate date = '2026-11-12';
 DECLARE @BatchStart bigint = 1;
 DECLARE @BatchEnd bigint;
 DECLARE @MaxBatchRow bigint;
@@ -187,7 +187,8 @@ SELECT
     ld_updateon,
     SCC_createdon_date,
     SCC_DSR,
-    Fin_DSR
+    Fin_DSR,
+    SCC_DSR - Fin_DSR AS DSR_Difference
 FROM #DSRResult
 ORDER BY ld_updateon DESC;
 
