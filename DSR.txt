@@ -1,0 +1,173 @@
+/*
+    Returns the latest SOA_CallLog_SCORECARD row per lead, in batches.
+
+    lead_details and lead_details_finance are read from the current database.
+    Scorecard lookup order:
+      1. tamweel_old
+      2. tamweel_archival, only when no scorecard row exists in tamweel_old
+
+    @BatchSize can be adjusted to suit the server workload.
+    For best performance, ensure both scorecard tables have an index beginning
+    with (lead_no, createdon_date DESC), with RequestXML included if practical.
+*/
+
+SET NOCOUNT ON;
+
+DECLARE @BatchSize int = 500;
+DECLARE @BatchStart bigint = 1;
+DECLARE @BatchEnd bigint;
+DECLARE @MaxBatchRow bigint;
+
+IF OBJECT_ID('tempdb..#LeadBatch') IS NOT NULL DROP TABLE #LeadBatch;
+IF OBJECT_ID('tempdb..#CurrentBatch') IS NOT NULL DROP TABLE #CurrentBatch;
+IF OBJECT_ID('tempdb..#DSRResult') IS NOT NULL DROP TABLE #DSRResult;
+
+SELECT
+    ROW_NUMBER() OVER (ORDER BY leads.lead_no) AS BatchRow,
+    leads.lead_no
+INTO #LeadBatch
+FROM
+(
+    SELECT DISTINCT ld.lead_no
+    FROM lead_details ld
+    INNER JOIN lead_details_finance ldf
+        ON ldf.lead_no = ld.lead_no
+    WHERE ld.lead_no IS NOT NULL
+) AS leads;
+
+CREATE UNIQUE CLUSTERED INDEX IX_LeadBatch_BatchRow
+    ON #LeadBatch (BatchRow);
+
+SELECT TOP (0)
+    ld.lead_stage,
+    ld.lead_no,
+    ld.app_ref_no,
+    ld.updatedon_date AS ld_updateon,
+    SCC.createdon_date AS SCC_createdon_date,
+    CAST(SCC.RequestXML AS XML).value(
+        '(//*[local-name()="Dsr"]/text())[1]',
+        'DECIMAL(10,2)'
+    ) AS SCC_DSR,
+    ldf.LEAD_DSR AS Fin_DSR
+INTO #DSRResult
+FROM lead_details ld
+INNER JOIN lead_details_finance ldf
+    ON ldf.lead_no = ld.lead_no
+LEFT JOIN [tamweel_old].[dbo].[SOA_CallLog_SCORECARD] SCC
+    ON 1 = 0;
+
+SELECT TOP (0) lead_no
+INTO #CurrentBatch
+FROM #LeadBatch;
+
+SELECT @MaxBatchRow = MAX(BatchRow)
+FROM #LeadBatch;
+
+WHILE @BatchStart <= ISNULL(@MaxBatchRow, 0)
+BEGIN
+    SET @BatchEnd = @BatchStart + @BatchSize - 1;
+
+    TRUNCATE TABLE #CurrentBatch;
+
+    INSERT INTO #CurrentBatch (lead_no)
+    SELECT lead_no
+    FROM #LeadBatch
+    WHERE BatchRow BETWEEN @BatchStart AND @BatchEnd;
+
+    -- First use the newest scorecard row found in tamweel_old.
+    INSERT INTO #DSRResult
+    (
+        lead_stage,
+        lead_no,
+        app_ref_no,
+        ld_updateon,
+        SCC_createdon_date,
+        SCC_DSR,
+        Fin_DSR
+    )
+    SELECT
+        ld.lead_stage,
+        ld.lead_no,
+        ld.app_ref_no,
+        ld.updatedon_date AS ld_updateon,
+        SCC.createdon_date AS SCC_createdon_date,
+        CAST(SCC.RequestXML AS XML).value(
+            '(//*[local-name()="Dsr"]/text())[1]',
+            'DECIMAL(10,2)'
+        ) AS SCC_DSR,
+        ldf.LEAD_DSR AS Fin_DSR
+    FROM #CurrentBatch batch
+    INNER JOIN lead_details ld
+        ON ld.lead_no = batch.lead_no
+    INNER JOIN lead_details_finance ldf
+        ON ldf.lead_no = ld.lead_no
+    CROSS APPLY
+    (
+        SELECT TOP (1)
+            old_scc.createdon_date,
+            old_scc.RequestXML
+        FROM [tamweel_old].[dbo].[SOA_CallLog_SCORECARD] old_scc
+        WHERE old_scc.lead_no = ld.lead_no
+        ORDER BY old_scc.createdon_date DESC
+    ) AS SCC;
+
+    -- Only leads with no scorecard row in tamweel_old are looked up in archival.
+    INSERT INTO #DSRResult
+    (
+        lead_stage,
+        lead_no,
+        app_ref_no,
+        ld_updateon,
+        SCC_createdon_date,
+        SCC_DSR,
+        Fin_DSR
+    )
+    SELECT
+        ld.lead_stage,
+        ld.lead_no,
+        ld.app_ref_no,
+        ld.updatedon_date AS ld_updateon,
+        SCC.createdon_date AS SCC_createdon_date,
+        CAST(SCC.RequestXML AS XML).value(
+            '(//*[local-name()="Dsr"]/text())[1]',
+            'DECIMAL(10,2)'
+        ) AS SCC_DSR,
+        ldf.LEAD_DSR AS Fin_DSR
+    FROM #CurrentBatch batch
+    INNER JOIN lead_details ld
+        ON ld.lead_no = batch.lead_no
+    INNER JOIN lead_details_finance ldf
+        ON ldf.lead_no = ld.lead_no
+    CROSS APPLY
+    (
+        SELECT TOP (1)
+            archive_scc.createdon_date,
+            archive_scc.RequestXML
+        FROM [tamweel_archival].[dbo].[SOA_CallLog_SCORECARD] archive_scc
+        WHERE archive_scc.lead_no = ld.lead_no
+        ORDER BY archive_scc.createdon_date DESC
+    ) AS SCC
+    WHERE NOT EXISTS
+    (
+        SELECT 1
+        FROM [tamweel_old].[dbo].[SOA_CallLog_SCORECARD] old_scc
+        WHERE old_scc.lead_no = ld.lead_no
+    );
+
+    SET @BatchStart = @BatchEnd + 1;
+END;
+
+SELECT
+    lead_stage,
+    lead_no,
+    app_ref_no,
+    ld_updateon,
+    SCC_createdon_date,
+    SCC_DSR,
+    Fin_DSR
+FROM #DSRResult
+ORDER BY ld_updateon DESC;
+
+DROP TABLE #CurrentBatch;
+DROP TABLE #DSRResult;
+DROP TABLE #LeadBatch;
