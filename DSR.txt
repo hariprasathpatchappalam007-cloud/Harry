@@ -7,8 +7,9 @@
       2. Latest sas_scorecard method row in tamweel_archival, only when no
          matching row exists in tamweel_old
 
-    Set @FromUpdatedOnDate and @ToUpdatedOnDate below to filter lead_details.
-    Either date may be NULL to leave that boundary open. The To date is inclusive.
+    The default lead_details date range is January 1 of the current year through
+    today. The To date is inclusive; either date may be set to NULL to leave that
+    boundary open.
     @BatchSize can be adjusted to suit the server workload.
     For best performance, ensure both scorecard tables have an index beginning
     with (lead_no, method_name, createdon_date DESC), with RequestXML included
@@ -18,8 +19,8 @@
 SET NOCOUNT ON;
 
 DECLARE @BatchSize int = 500;
-DECLARE @FromUpdatedOnDate date = NULL;
-DECLARE @ToUpdatedOnDate date = NULL;
+DECLARE @FromUpdatedOnDate date = DATEFROMPARTS(YEAR(GETDATE()), 1, 1);
+DECLARE @ToUpdatedOnDate date = CAST(GETDATE() AS date);
 DECLARE @BatchStart bigint = 1;
 DECLARE @BatchEnd bigint;
 DECLARE @MaxBatchRow bigint;
@@ -125,7 +126,7 @@ BEGIN
             old_scc.RequestXML
         FROM [tamweel_old].[dbo].[SOA_CallLog_SCORECARD] old_scc
         WHERE old_scc.lead_no = ld.lead_no
-          AND old_scc.method_name = 'sas_scorecard'
+          AND old_scc.method_name = 'SAS_ScoreCard'
         ORDER BY old_scc.createdon_date DESC
     ) AS SCC;
 
@@ -165,7 +166,7 @@ BEGIN
             archive_scc.RequestXML
         FROM [tamweel_archival].[dbo].[SOA_CallLog_SCORECARD] archive_scc
         WHERE archive_scc.lead_no = ld.lead_no
-          AND archive_scc.method_name = 'sas_scorecard'
+          AND archive_scc.method_name = 'SAS_ScoreCard'
         ORDER BY archive_scc.createdon_date DESC
     ) AS SCC
     WHERE NOT EXISTS
@@ -173,7 +174,7 @@ BEGIN
         SELECT 1
         FROM [tamweel_old].[dbo].[SOA_CallLog_SCORECARD] old_scc
         WHERE old_scc.lead_no = ld.lead_no
-          AND old_scc.method_name = 'sas_scorecard'
+          AND old_scc.method_name = 'SAS_ScoreCard'
     );
 
     SET @BatchStart = @BatchEnd + 1;
