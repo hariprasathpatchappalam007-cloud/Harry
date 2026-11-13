@@ -130,6 +130,8 @@ BEGIN
         leads.lead_stage,
         leads.lead_no,
         leads.app_ref_no,
+        leads.Fin_DSR AS Lead_DSR,
+        scorecards.SCC_DSR AS Scorecard_DSR,
         scorecards.SCC_DSR - leads.Fin_DSR AS DSR_Difference
     FROM #MonthLeads leads
     INNER JOIN #MonthScorecards scorecards
