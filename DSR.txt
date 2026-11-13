@@ -38,7 +38,7 @@ BEGIN
         ld.lead_stage,
         ld.lead_no,
         ld.app_ref_no,
-        ld.Createdon_date AS Lead_CreatedOn,
+        ld.Createdon_date AS LeadCreatedOnDate,
         ld.updatedon_date AS ld_updateon,
         ldf.LEAD_DSR AS Fin_DSR
     INTO #MonthLeads
@@ -131,7 +131,7 @@ BEGIN
         leads.lead_stage,
         leads.lead_no,
         leads.app_ref_no,
-        leads.Lead_CreatedOn,
+        leads.LeadCreatedOnDate AS Lead_CreatedOn,
         scorecards.SCC_createdon_date AS Scorecard_CreatedOn,
         leads.Fin_DSR AS Lead_DSR,
         scorecards.SCC_DSR AS Scorecard_DSR,
