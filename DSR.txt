@@ -2,7 +2,7 @@
     Read-only monthly DSR difference report.
 
     Iterates one Createdon_date month at a time from January 2018 through
-    October 2025, in monthly lead batches. Returns only non-zero, calculable
+    October 2025,     in one-month date windows. Returns only non-zero, calculable
     DSR differences, with month and lead identifiers so the results are
     traceable. It does not update finance.
 
@@ -10,7 +10,6 @@
     tamweel_archival only when no matching old-database row exists.
     Existing stages and newest-first lead update ordering are preserved.
 
-    @BatchSize can be adjusted to suit the server workload.
     For best performance, review existing indexes and the execution plan:
       lead_details (lead_stage, Createdon_date, lead_no) INCLUDE (app_ref_no)
       lead_details_finance (lead_no) INCLUDE (LEAD_DSR)
@@ -24,39 +23,16 @@ DECLARE @FirstMonth date = '20180101';
 DECLARE @AfterLastMonth date = '20251101';
 DECLARE @MonthStart date = @FirstMonth;
 DECLARE @MonthEnd date;
-DECLARE @BatchSize int = 500;
-DECLARE @BatchStart bigint;
-DECLARE @BatchEnd bigint;
-DECLARE @MaxBatchRow bigint;
-
-IF @BatchSize < 1
-    THROW 50001, 'BatchSize must be greater than zero.', 1;
-
-IF OBJECT_ID('tempdb..#DSRMonthDifferences') IS NOT NULL DROP TABLE #DSRMonthDifferences;
-
-SELECT TOP (0)
-    @MonthStart AS ReportMonth,
-    ld.lead_stage,
-    ld.lead_no,
-    ld.app_ref_no,
-    ld.updatedon_date AS ld_updateon,
-    CAST(NULL AS DECIMAL(38,20)) AS SCC_DSR,
-    ldf.LEAD_DSR AS Fin_DSR,
-    CAST(NULL AS DECIMAL(38,20)) - ldf.LEAD_DSR AS DSR_Difference
-INTO #DSRMonthDifferences
-FROM lead_details ld
-INNER JOIN lead_details_finance ldf
-    ON ldf.lead_no = ld.lead_no;
+DECLARE @MonthYear int;
+DECLARE @MonthNumber int;
 
 WHILE @MonthStart < @AfterLastMonth
 BEGIN
     SET @MonthEnd = DATEADD(MONTH, 1, @MonthStart);
-    SET @BatchStart = 1;
 
     IF OBJECT_ID('tempdb..#MonthLeads') IS NOT NULL DROP TABLE #MonthLeads;
-    IF OBJECT_ID('tempdb..#LeadBatch') IS NOT NULL DROP TABLE #LeadBatch;
-    IF OBJECT_ID('tempdb..#CurrentBatch') IS NOT NULL DROP TABLE #CurrentBatch;
-    IF OBJECT_ID('tempdb..#BatchScorecards') IS NOT NULL DROP TABLE #BatchScorecards;
+    IF OBJECT_ID('tempdb..#MonthLeadKeys') IS NOT NULL DROP TABLE #MonthLeadKeys;
+    IF OBJECT_ID('tempdb..#MonthScorecards') IS NOT NULL DROP TABLE #MonthScorecards;
 
     SELECT DISTINCT
         ld.lead_stage,
@@ -78,145 +54,94 @@ BEGIN
         ON #MonthLeads (lead_no);
 
     SELECT
-        ROW_NUMBER() OVER (ORDER BY leads.lead_no) AS BatchRow,
-        leads.lead_no
-    INTO #LeadBatch
-    FROM
-    (
-        SELECT DISTINCT lead_no
-        FROM #MonthLeads
-    ) AS leads;
+        DISTINCT lead_no
+    INTO #MonthLeadKeys
+    FROM #MonthLeads;
 
-    CREATE UNIQUE CLUSTERED INDEX IX_LeadBatch_BatchRow
-        ON #LeadBatch (BatchRow);
-
-    SELECT TOP (0) lead_no
-    INTO #CurrentBatch
-    FROM #LeadBatch;
-
-    CREATE UNIQUE CLUSTERED INDEX IX_CurrentBatch_LeadNo
-        ON #CurrentBatch (lead_no);
+    CREATE UNIQUE CLUSTERED INDEX IX_MonthLeadKeys_LeadNo
+        ON #MonthLeadKeys (lead_no);
 
     SELECT TOP (0)
-        batch.lead_no,
+        leads.lead_no,
         SCC.createdon_date AS SCC_createdon_date,
         CAST(SCC.RequestXML AS XML).value(
             '(//*[local-name()="Dsr"]/text())[1]',
             'DECIMAL(38,20)'
         ) AS SCC_DSR
-    INTO #BatchScorecards
-    FROM #CurrentBatch batch
+    INTO #MonthScorecards
+    FROM #MonthLeadKeys leads
     LEFT JOIN [tamweel_old].[dbo].[SOA_CallLog_SCORECARD] SCC
         ON 1 = 0;
 
-    CREATE UNIQUE CLUSTERED INDEX IX_BatchScorecards_LeadNo
-        ON #BatchScorecards (lead_no);
+    CREATE UNIQUE CLUSTERED INDEX IX_MonthScorecards_LeadNo
+        ON #MonthScorecards (lead_no);
 
-    SELECT @MaxBatchRow = MAX(BatchRow)
-    FROM #LeadBatch;
-
-    WHILE @BatchStart <= ISNULL(@MaxBatchRow, 0)
-    BEGIN
-        SET @BatchEnd = @BatchStart + @BatchSize - 1;
-
-        TRUNCATE TABLE #CurrentBatch;
-        TRUNCATE TABLE #BatchScorecards;
-
-        INSERT INTO #CurrentBatch (lead_no)
-        SELECT lead_no
-        FROM #LeadBatch
-        WHERE BatchRow BETWEEN @BatchStart AND @BatchEnd;
-
-        -- The old database wins whenever it has any matching method row.
-        INSERT INTO #BatchScorecards (lead_no, SCC_createdon_date, SCC_DSR)
-        SELECT
-            batch.lead_no,
-            SCC.createdon_date,
-            CAST(SCC.RequestXML AS XML).value(
-                '(//*[local-name()="Dsr"]/text())[1]',
-                'DECIMAL(38,20)'
-            )
-        FROM #CurrentBatch batch
-        CROSS APPLY
-        (
-            SELECT TOP (1) old_scc.createdon_date, old_scc.RequestXML
-            FROM [tamweel_old].[dbo].[SOA_CallLog_SCORECARD] old_scc
-            WHERE old_scc.lead_no = batch.lead_no
-              AND old_scc.method_name = 'SAS_ScoreCard'
-            ORDER BY old_scc.createdon_date DESC
-        ) AS SCC;
-
-        -- Query archival only for leads not found in tamweel_old.
-        INSERT INTO #BatchScorecards (lead_no, SCC_createdon_date, SCC_DSR)
-        SELECT
-            batch.lead_no,
-            SCC.createdon_date,
-            CAST(SCC.RequestXML AS XML).value(
-                '(//*[local-name()="Dsr"]/text())[1]',
-                'DECIMAL(38,20)'
-            )
-        FROM #CurrentBatch batch
-        CROSS APPLY
-        (
-            SELECT TOP (1) archive_scc.createdon_date, archive_scc.RequestXML
-            FROM [tamweel_archival].[dbo].[SOA_CallLog_SCORECARD] archive_scc
-            WHERE archive_scc.lead_no = batch.lead_no
-              AND archive_scc.method_name = 'SAS_ScoreCard'
-            ORDER BY archive_scc.createdon_date DESC
-        ) AS SCC
-        WHERE NOT EXISTS
-        (
-            SELECT 1
-            FROM #BatchScorecards existing
-            WHERE existing.lead_no = batch.lead_no
-        );
-
-        INSERT INTO #DSRMonthDifferences
-        (
-            ReportMonth,
-            lead_stage,
-            lead_no,
-            app_ref_no,
-            ld_updateon,
-            SCC_DSR,
-            Fin_DSR,
-            DSR_Difference
+    -- The old database wins whenever it has any matching method row.
+    INSERT INTO #MonthScorecards (lead_no, SCC_createdon_date, SCC_DSR)
+    SELECT
+        leads.lead_no,
+        SCC.createdon_date,
+        CAST(SCC.RequestXML AS XML).value(
+            '(//*[local-name()="Dsr"]/text())[1]',
+            'DECIMAL(38,20)'
         )
-        SELECT
-            @MonthStart,
-            leads.lead_stage,
-            leads.lead_no,
-            leads.app_ref_no,
-            leads.ld_updateon,
-            scorecards.SCC_DSR,
-            leads.Fin_DSR,
-            scorecards.SCC_DSR - leads.Fin_DSR
-        FROM #MonthLeads leads
-        INNER JOIN #BatchScorecards scorecards
-            ON scorecards.lead_no = leads.lead_no
-        INNER JOIN #CurrentBatch batch
-            ON batch.lead_no = leads.lead_no
-        WHERE scorecards.SCC_DSR IS NOT NULL
-          AND leads.Fin_DSR IS NOT NULL
-          AND scorecards.SCC_DSR <> leads.Fin_DSR;
+    FROM #MonthLeadKeys leads
+    CROSS APPLY
+    (
+        SELECT TOP (1) old_scc.createdon_date, old_scc.RequestXML
+        FROM [tamweel_old].[dbo].[SOA_CallLog_SCORECARD] old_scc
+        WHERE old_scc.lead_no = leads.lead_no
+          AND old_scc.method_name = 'SAS_ScoreCard'
+        ORDER BY old_scc.createdon_date DESC
+    ) AS SCC;
 
-        SET @BatchStart = @BatchEnd + 1;
-    END;
+    -- Query archival only for leads not found in tamweel_old.
+    INSERT INTO #MonthScorecards (lead_no, SCC_createdon_date, SCC_DSR)
+    SELECT
+        leads.lead_no,
+        SCC.createdon_date,
+        CAST(SCC.RequestXML AS XML).value(
+            '(//*[local-name()="Dsr"]/text())[1]',
+            'DECIMAL(38,20)'
+        )
+    FROM #MonthLeadKeys leads
+    CROSS APPLY
+    (
+        SELECT TOP (1) archive_scc.createdon_date, archive_scc.RequestXML
+        FROM [tamweel_archival].[dbo].[SOA_CallLog_SCORECARD] archive_scc
+        WHERE archive_scc.lead_no = leads.lead_no
+          AND archive_scc.method_name = 'SAS_ScoreCard'
+        ORDER BY archive_scc.createdon_date DESC
+    ) AS SCC
+    WHERE NOT EXISTS
+    (
+        SELECT 1
+        FROM #MonthScorecards existing
+        WHERE existing.lead_no = leads.lead_no
+    );
+
+    SET @MonthYear = YEAR(@MonthStart);
+    SET @MonthNumber = MONTH(@MonthStart);
+    RAISERROR(N'Completed DSR comparison for %04d-%02d. Returning this month''s differences.',
+        0, 1, @MonthYear, @MonthNumber) WITH NOWAIT;
+
+    SELECT
+        @MonthStart AS ReportMonth,
+        leads.lead_stage,
+        leads.lead_no,
+        leads.app_ref_no,
+        scorecards.SCC_DSR - leads.Fin_DSR AS DSR_Difference
+    FROM #MonthLeads leads
+    INNER JOIN #MonthScorecards scorecards
+        ON scorecards.lead_no = leads.lead_no
+    WHERE scorecards.SCC_DSR IS NOT NULL
+      AND leads.Fin_DSR IS NOT NULL
+      AND scorecards.SCC_DSR <> leads.Fin_DSR
+    ORDER BY leads.ld_updateon DESC, leads.lead_no;
+
+    DROP TABLE #MonthScorecards;
+    DROP TABLE #MonthLeadKeys;
+    DROP TABLE #MonthLeads;
 
     SET @MonthStart = @MonthEnd;
 END;
-
-SELECT
-    ReportMonth,
-    lead_stage,
-    lead_no,
-    app_ref_no,
-    DSR_Difference
-FROM #DSRMonthDifferences
-ORDER BY ld_updateon DESC, ReportMonth DESC, lead_no;
-
-DROP TABLE #BatchScorecards;
-DROP TABLE #CurrentBatch;
-DROP TABLE #LeadBatch;
-DROP TABLE #MonthLeads;
-DROP TABLE #DSRMonthDifferences;
