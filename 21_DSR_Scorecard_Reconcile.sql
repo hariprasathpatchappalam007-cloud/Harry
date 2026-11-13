@@ -1,4 +1,5 @@
 -- Deploy in the application database, using SSMS or sqlcmd -b. SQL Server 2012+.
+-- Uses TRY_CAST so database compatibility level 100 is supported without ALTER DATABASE.
 -- Does not start a reconciliation or change the saved month on redeployment.
 SET ANSI_NULLS ON;
 SET QUOTED_IDENTIFIER ON;
@@ -231,8 +232,9 @@ BEGIN
         ) SCC
         WHERE NOT EXISTS (SELECT 1 FROM #Scorecards s WHERE s.lead_no = l.lead_no);
 
+        -- A UTF-16 BOM preserves Unicode and avoids TRY_CAST's NVARCHAR(MAX) length limit.
         SELECT l.lead_no, s.ScorecardDatabase, s.ScorecardCreatedOn,
-            TRY_CONVERT(XML, s.RequestText) AS RequestDocument
+            TRY_CAST(0xFFFE + CONVERT(VARBINARY(MAX), s.RequestText) AS XML) AS RequestDocument
         INTO #Documents
         FROM #Leads l
         LEFT JOIN #Scorecards s ON s.lead_no = l.lead_no;
@@ -252,7 +254,8 @@ BEGIN
         SELECT ld.lead_no, ld.app_ref_no, ld.lead_stage, ld.Createdon_date AS LeadCreatedOn,
             f.LEAD_DSR AS OldFinDSR, f.LEAD_DSR AS NewFinDSR,
             p.ScorecardDatabase, p.ScorecardCreatedOn, p.DsrText,
-            TRY_CONVERT(DECIMAL(38,20), p.DsrText) AS SCC_DSR,
+            TRY_CAST(CASE WHEN DATALENGTH(p.DsrText) <= 8000
+                THEN CONVERT(NVARCHAR(4000), p.DsrText) END AS DECIMAL(38,20)) AS SCC_DSR,
             CONVERT(VARCHAR(24), CASE
                 WHEN p.DocumentIssue IS NOT NULL THEN p.DocumentIssue
                 WHEN p.DsrText IS NULL THEN 'BlankDSR'
@@ -326,7 +329,7 @@ BEGIN
                 WHEN 'MissingScorecard' THEN N'No matching SAS_ScoreCard row in either source; permanently completed without an UPDATE.'
                 WHEN 'BlankDSR' THEN N'DSR is absent or blank; finance unchanged; permanently completed.'
                 WHEN 'InvalidXML' THEN N'Selected scorecard XML is NULL or malformed; finance unchanged; permanently completed.'
-                WHEN 'InvalidDSR' THEN N'DSR is not representable as decimal(38,20); finance unchanged; permanently completed.'
+                WHEN 'InvalidDSR' THEN N'DSR exceeds 4000 Unicode code units or is not representable as decimal(38,20); finance unchanged; permanently completed.'
                 WHEN 'AlreadyMatched' THEN N'Finance already matches; permanently completed without an UPDATE.'
                 ELSE N'Finance updated from selected scorecard; permanently completed.' END
         FROM #Work w
