@@ -4,6 +4,7 @@
     month at a time and returns ONE consolidated
     result grid for January through October only. ReportMonth identifies each monthly split.
     Finance is not updated. Only non-zero, calculable differences are returned.
+    Method names are space-trimmed; scorecard DSR is rounded to DECIMAL(10,2).
 
     Latest SAS_ScoreCard row in tamweel_old takes priority; archival is used
     only when no matching old row exists. Existing stages are preserved.
@@ -61,7 +62,7 @@ RAISERROR(N'Year leads staged. Selecting latest old scorecards in one set-based 
         ROW_NUMBER() OVER (PARTITION BY keys.lead_no ORDER BY s.createdon_date DESC) AS ScorecardRank
     FROM [tamweel_old].[dbo].[SOA_CallLog_SCORECARD] s
     INNER JOIN #YearLeadKeys keys ON keys.lead_no = s.lead_no
-    WHERE s.method_name = 'SAS_ScoreCard'
+    WHERE LTRIM(RTRIM(s.method_name)) = 'SAS_ScoreCard'
 )
 SELECT lead_no, createdon_date AS ScorecardCreatedOn,
     CONVERT(NVARCHAR(MAX), RequestXML) AS RequestText
@@ -87,7 +88,7 @@ BEGIN
             ROW_NUMBER() OVER (PARTITION BY keys.lead_no ORDER BY s.createdon_date DESC) AS ScorecardRank
         FROM [tamweel_archival].[dbo].[SOA_CallLog_SCORECARD] s
         INNER JOIN #YearMissingLeadKeys keys ON keys.lead_no = s.lead_no
-        WHERE s.method_name = 'SAS_ScoreCard'
+        WHERE LTRIM(RTRIM(s.method_name)) = 'SAS_ScoreCard'
     )
     INSERT #YearScorecards (lead_no, ScorecardCreatedOn, RequestText)
     SELECT lead_no, createdon_date, CONVERT(NVARCHAR(MAX), RequestXML)
@@ -108,8 +109,8 @@ SELECT TOP (0)
     leads.LeadUpdatedOn,
     SCC.ScorecardCreatedOn AS Scorecard_CreatedOn,
     leads.Fin_DSR AS Lead_DSR,
-    CAST(NULL AS DECIMAL(38,20)) AS Scorecard_DSR,
-    CAST(NULL AS DECIMAL(38,20)) - leads.Fin_DSR AS DSR_Difference
+    CAST(NULL AS DECIMAL(10,2)) AS Scorecard_DSR,
+    CAST(NULL AS DECIMAL(10,2)) - leads.Fin_DSR AS DSR_Difference
 INTO #YearDSRDifferences
 FROM #YearLeads leads
 LEFT JOIN #YearScorecards SCC ON 1 = 0;
@@ -122,7 +123,7 @@ BEGIN
 
     SELECT SCC.lead_no, SCC.ScorecardCreatedOn,
         CAST(SCC.RequestText AS XML).value(
-            '(//*[local-name()="Dsr"]/text())[1]', 'DECIMAL(38,20)') AS SCC_DSR
+            '(//*[local-name()="Dsr"]/text())[1]', 'DECIMAL(10,2)') AS SCC_DSR
     INTO #YearMonthScorecards
     FROM #YearScorecards SCC
     WHERE EXISTS
