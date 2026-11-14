@@ -1,2 +1,0 @@
-ORACLE TNS
-exaccnonprodcl02-scan.dibuat.ae:1626/MDHUAT.dibuat.ae
