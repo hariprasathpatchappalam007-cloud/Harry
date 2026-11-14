@@ -1,0 +1,21 @@
+Dear Aamir,
+
+It is not mandatory to process the case through PMU Tracker – Update Transfer Status.
+
+We can test either:
+
+1. Ijara Initiation – Checker
+2. PMU Tracker – Update Transfer Status
+
+The main goal is to successfully initiate the Ijara by calling the T24 Activation API.
+
+You can decide which approach is best for the sanity testing.
+
+Also, no other PMU stage movement testing is required. The case only needs to be pushed to closure, either through PMU Tracker – Update Transfer Status or Ijara Initiation – Checker, depending on the chosen approach.
+
+
+Dear Priya,
+
+I don't have the expertise to determine the internal segregation of responsibilities between the Operations Servicing team and the New Origination team.
+
+I have provided the functionality and the relevant tables to the best of my understanding. You can decide which users or teams should handle each activity based on the operational responsibilities.
