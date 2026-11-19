@@ -1,0 +1,285 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GetCustomerInformationResponse xmlns="http://xmlns.soa.dib.ae/BFS/BusinessObjects/EBM/Customer/V1/CustomerInformation/GetCustomerInformation" xmlns:wsa="http://www.w3.org/2005/08/addressing" xmlns:ns153="http://xmlns.oracle.com/CustomerServiceApplication/GetCustomerInfoComposite/GetCustomerInfoServiceAPIBpel" xmlns:ns152="http://xmlns.osp.eas.cognizant.com/BFS/BusinessObjects/EBO/Customer/V1/CRATInformation" xmlns:oraxsl="http://www.oracle.com/XSL/Transform/java" xmlns:ns156="http://xmlns.soa.dib.ae/BFS/BusinessObjects/EBM/Customer/V1/GetCustomerCommunicationInfoDbOutput" xmlns:ns199="http://xmlns.soa.dib.ae/BFS/BusinessObjects/EBM/Bank/V1/Account/GetAccountDetailsServiceAPI" xmlns:plnk="http://schemas.xmlsoap.org/ws/2003/05/partner-link/" xmlns:ns154="http://xmlns.soa.dib.ae/BFS/BusinessObjects/EBM/Bank/V1/Customer/GetCustomerInfoServiceAPI" xmlns:oracle-xsl-mapper="http://www.oracle.com/xsl/mapper/schemas" xmlns:env="http://schemas.xmlsoap.org/soap/envelope/" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:ns54="http://xmlns.soa.dib.ae/BFS/BusinessObjects/EBM/Customer/V1/CustomerInformation/GetCustomerInformation" xmlns:ns53="http://xmlns.oracle.com/CustomerServiceApplication/GetCustomerInformationServiceComposite/GetCustomerInformationBpel" xmlns:inp2="http://xmlns.soa.dib.ae/BFS/BusinessObjects/EBM/CommonComponents/V1/FaultDetails" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:client="http://xmlns.oracle.com/UtilitiesApplication/CoreBankingDataServiceComposite/CoreBankingDataServiceBpel">
+  <MessageResponseHeader>
+    <ns59:ServiceId xmlns:ns59="http://xmlns.soa.dib.ae/BFS/BusinessObjects/EBM/CommonComponents/V1/MessageHeader/MessageHeader">0380</ns59:ServiceId>
+    <ns59:ServiceRequestorId xmlns:ns59="http://xmlns.soa.dib.ae/BFS/BusinessObjects/EBM/CommonComponents/V1/MessageHeader/MessageHeader">HMF</ns59:ServiceRequestorId>
+    <ns59:ServiceProviderId xmlns:ns59="http://xmlns.soa.dib.ae/BFS/BusinessObjects/EBM/CommonComponents/V1/MessageHeader/MessageHeader">IBM</ns59:ServiceProviderId>
+    <ns59:RequestID xmlns:ns59="http://xmlns.soa.dib.ae/BFS/BusinessObjects/EBM/CommonComponents/V1/MessageHeader/MessageHeader">HMF740864946460</ns59:RequestID>
+    <Language xmlns="http://xmlns.soa.dib.ae/BFS/BusinessObjects/EBM/CommonComponents/V1/MessageHeader/MessageHeader">Canonical</Language>
+    <ns59:TimeStamp xmlns:ns59="http://xmlns.soa.dib.ae/BFS/BusinessObjects/EBM/CommonComponents/V1/MessageHeader/MessageHeader">20261119</ns59:TimeStamp>
+    <ns59:RequestLifeCycleStage xmlns:ns59="http://xmlns.soa.dib.ae/BFS/BusinessObjects/EBM/CommonComponents/V1/MessageHeader/MessageHeader">RESP</ns59:RequestLifeCycleStage>
+    <ns59:MessageStatus xmlns:ns59="http://xmlns.soa.dib.ae/BFS/BusinessObjects/EBM/CommonComponents/V1/MessageHeader/MessageHeader" />
+  </MessageResponseHeader>
+  <MessageResponseBody>
+    <CustomersDetails>
+      <XRef>HMF740864946460</XRef>
+      <TransactionFlag>S</TransactionFlag>
+      <ns64:CustomerInformation xmlns:ns64="http://xmlns.osp.eas.cognizant.com/BFS/BusinessObjects/EBO/Customer/V1/CustomerInformation">
+        <ns64:CustomerId>2680787</ns64:CustomerId>
+        <ns55:PersonInformation xmlns:ns55="http://xmlns.osp.eas.cognizant.com/BFS/BusinessObjects/EBO/CommonComponents/V1/PersonInformation">
+          <ns55:PersonName>
+            <ns55:LastName>O MALLEY</ns55:LastName>
+            <ns55:FirstName>MARTIN RORY HOWARD</ns55:FirstName>
+            <ns55:MiddleName />
+            <ns55:FullName>MARTIN RORY HOWARD O MALLEY</ns55:FullName>
+            <ns55:FamilyName>O MALLEY</ns55:FamilyName>
+            <ns55:TitlePrefix>Mr.</ns55:TitlePrefix>
+            <ns55:LegalName>MARTIN RORY HOWARD O MALLEY</ns55:LegalName>
+            <ns55:ShortName1>MARTIN RORY HOW</ns55:ShortName1>
+            <ns55:InLanguage>ENGLISH</ns55:InLanguage>
+          </ns55:PersonName>
+          <ns55:PersonName>
+            <ns55:InLanguage>ARABIC</ns55:InLanguage>
+          </ns55:PersonName>
+          <ns55:CountryOfResidence>AE</ns55:CountryOfResidence>
+          <ns66:ContactInformation xmlns:ns66="http://xmlns.osp.eas.cognizant.com/BFS/BusinessObjects/EBO/CommonComponents/V1/ContactInformation">
+            <ns66:PhoneNumber>
+              <ns66:Phone />
+            </ns66:PhoneNumber>
+            <ns62:PostalAddress xmlns:ns62="http://xmlns.osp.eas.cognizant.com/BFS/BusinessObjects/EBO/CommonComponents/V1/PostalAddress">
+              <ns62:AddressLine>
+                <ns62:AddressLine1>AL HAMRA VILLAGE</ns62:AddressLine1>
+                <ns62:AddressLine2>VILLA 104</ns62:AddressLine2>
+                <ns62:AddressLine3>RAS ALKHAIMAH</ns62:AddressLine3>
+              </ns62:AddressLine>
+              <ns62:Country>AE</ns62:Country>
+            </ns62:PostalAddress>
+            <ns66:FaxNumbers />
+            <ns66:EMailIAddresses>
+              <ns66:EMailAddress>
+                <ns66:Address>martinomally64@gmail.com</ns66:Address>
+                <ns66:IsPrimary>Y</ns66:IsPrimary>
+              </ns66:EMailAddress>
+            </ns66:EMailIAddresses>
+            <ns66:MobileNumbers>
+              <ns66:MobileNumber>0509212084</ns66:MobileNumber>
+            </ns66:MobileNumbers>
+          </ns66:ContactInformation>
+          <ns55:DateOfBirth>19800715</ns55:DateOfBirth>
+          <ns55:Gender>M</ns55:Gender>
+          <ns55:MaritalStatus />
+          <ns55:IsAlive />
+          <ns55:DependentInformation>
+            <ns55:Dependents />
+          </ns55:DependentInformation>
+          <ns55:Passport>
+            <ns55:PassportNumber>548003498</ns55:PassportNumber>
+            <ns55:IssueDate>20180321</ns55:IssueDate>
+            <ns55:ExpireDate>20280921</ns55:ExpireDate>
+            <ns62:PostalAddress xmlns:ns62="http://xmlns.osp.eas.cognizant.com/BFS/BusinessObjects/EBO/CommonComponents/V1/PostalAddress">
+              <ns62:AddressLine>
+                <ns62:AddressLine1>VILLA 104</ns62:AddressLine1>
+                <ns62:AddressLine2>AL HAMRA VILLAGE</ns62:AddressLine2>
+                <ns62:AddressLine3>RAS ALKHAIMAH</ns62:AddressLine3>
+              </ns62:AddressLine>
+              <ns62:Country>AE</ns62:Country>
+            </ns62:PostalAddress>
+          </ns55:Passport>
+          <ns55:NationId>784198035297047</ns55:NationId>
+          <ns55:NationIdExpiryDate>27-SEP-2036</ns55:NationIdExpiryDate>
+          <ns55:GovtIssuedID>
+            <ns55:IdentSerialNum>784198035297047</ns55:IdentSerialNum>
+          </ns55:GovtIssuedID>
+          <ns55:Languages>
+            <ns55:PrimaryLanguage>ENG</ns55:PrimaryLanguage>
+          </ns55:Languages>
+          <ns55:Nationality>GB</ns55:Nationality>
+          <ns55:ExpatCountry />
+          <ns55:IsMinor>N</ns55:IsMinor>
+          <ns55:VisaDetails>
+            <ns55:VisaDetail />
+          </ns55:VisaDetails>
+        </ns55:PersonInformation>
+        <ns62:PostalAddress xmlns:ns62="http://xmlns.osp.eas.cognizant.com/BFS/BusinessObjects/EBO/CommonComponents/V1/PostalAddress">
+          <ns62:AddressLine>
+            <ns62:AddressLine1>AL HAMRA VILLAGE</ns62:AddressLine1>
+            <ns62:AddressLine2>VILLA 104</ns62:AddressLine2>
+            <ns62:AddressLine3>RAS ALKHAIMAH</ns62:AddressLine3>
+            <ns62:AddressLine4 />
+          </ns62:AddressLine>
+          <ns62:Country>AE</ns62:Country>
+        </ns62:PostalAddress>
+        <ns64:CustomerType>I</ns64:CustomerType>
+        <ns64:CustomerSegment>NORMAL</ns64:CustomerSegment>
+        <ns57:CustomerStatus xmlns:ns57="http://xmlns.osp.eas.cognizant.com/BFS/BusinessObjects/EBO/Customer/V1/CustomerStatus">
+          <ns57:CustStatusCode>R</ns57:CustStatusCode>
+          <ns57:StatusDescription />
+        </ns57:CustomerStatus>
+        <ns64:CIFDetails>
+          <ns64:OpenDate>20261104</ns64:OpenDate>
+          <ns64:CIFStatus>I</ns64:CIFStatus>
+          <ns64:LocalBranch>048</ns64:LocalBranch>
+          <ns64:UtilitiesProvided />
+        </ns64:CIFDetails>
+        <ns64:IsFrozen />
+        <ns64:AMLDetails>
+          <ns64:AMLFlag />
+        </ns64:AMLDetails>
+        <ns64:VIPCode />
+        <ns64:CustomerCategory>RETAIL</ns64:CustomerCategory>
+        <ns64:RiskProfile>AN</ns64:RiskProfile>
+        <ns64:CustomerProfileInformation>
+          <ns64:EmploymentStatus>S</ns64:EmploymentStatus>
+          <ns64:CurrentEmployerInfo>
+            <ns64:Designation />
+            <ns64:OfficialContactInformation>
+              <ns66:PhoneNumber xmlns:ns66="http://xmlns.osp.eas.cognizant.com/BFS/BusinessObjects/EBO/CommonComponents/V1/ContactInformation" />
+              <ns62:PostalAddress xmlns:ns62="http://xmlns.osp.eas.cognizant.com/BFS/BusinessObjects/EBO/CommonComponents/V1/PostalAddress">
+                <ns62:AddressLine />
+              </ns62:PostalAddress>
+              <ns66:FaxNumbers xmlns:ns66="http://xmlns.osp.eas.cognizant.com/BFS/BusinessObjects/EBO/CommonComponents/V1/ContactInformation" />
+              <ns66:EMailIAddresses xmlns:ns66="http://xmlns.osp.eas.cognizant.com/BFS/BusinessObjects/EBO/CommonComponents/V1/ContactInformation">
+                <ns66:EMailAddress />
+              </ns66:EMailIAddresses>
+            </ns64:OfficialContactInformation>
+            <ns64:SalaryDetails>
+              <ns64:GrossSalary />
+            </ns64:SalaryDetails>
+          </ns64:CurrentEmployerInfo>
+          <ns64:PreviousEmployersDetails>
+            <ns64:PreviousEmployerDetails>
+              <ns64:Designation />
+            </ns64:PreviousEmployerDetails>
+          </ns64:PreviousEmployersDetails>
+        </ns64:CustomerProfileInformation>
+        <ns64:ChannelAccessFlags>
+          <ns64:Channel>
+            <ns64:ChannelName>SMS</ns64:ChannelName>
+            <ns64:EnableFlag>Y</ns64:EnableFlag>
+          </ns64:Channel>
+          <ns64:Channel>
+            <ns64:ChannelName>Phone</ns64:ChannelName>
+            <ns64:EnableFlag>Y</ns64:EnableFlag>
+          </ns64:Channel>
+        </ns64:ChannelAccessFlags>
+        <ns64:TaxInfo />
+        <ns64:OverLimitDetails />
+        <ns64:CustomerLiabilities>
+          <ns64:CustomerLiability>
+            <ns64:LiabilityId />
+          </ns64:CustomerLiability>
+        </ns64:CustomerLiabilities>
+        <ns64:CustomerMiscellaneous>
+          <ns64:CustomerData>
+            <ns64:Data>
+              <ns64:Value>10101</ns64:Value>
+            </ns64:Data>
+          </ns64:CustomerData>
+          <ns64:CompData>
+            <ns64:Data>
+              <ns64:Value>1</ns64:Value>
+            </ns64:Data>
+          </ns64:CompData>
+        </ns64:CustomerMiscellaneous>
+        <ns64:KYCInformation>
+          <ns64:IndividualKYCInformations>
+            <ns64:IndividualKYCInformation>
+              <ns58:PurposeOfAccount xmlns:ns58="http://xmlns.osp.eas.cognizant.com/BFS/BusinessObjects/EBO/Customer/V1/KYCInformation">2</ns58:PurposeOfAccount>
+              <ns58:OriginCountry xmlns:ns58="http://xmlns.osp.eas.cognizant.com/BFS/BusinessObjects/EBO/Customer/V1/KYCInformation">GB</ns58:OriginCountry>
+              <ns58:UAECentralBankBlacklist xmlns:ns58="http://xmlns.osp.eas.cognizant.com/BFS/BusinessObjects/EBO/Customer/V1/KYCInformation">N</ns58:UAECentralBankBlacklist>
+              <ns58:DIBInternalBlacklist xmlns:ns58="http://xmlns.osp.eas.cognizant.com/BFS/BusinessObjects/EBO/Customer/V1/KYCInformation">N</ns58:DIBInternalBlacklist>
+              <ns58:GovernmentEmployee xmlns:ns58="http://xmlns.osp.eas.cognizant.com/BFS/BusinessObjects/EBO/Customer/V1/KYCInformation">N</ns58:GovernmentEmployee>
+              <ns58:RiskDetails xmlns:ns58="http://xmlns.osp.eas.cognizant.com/BFS/BusinessObjects/EBO/Customer/V1/KYCInformation">
+                <ns58:CurrentRisk>
+                  <ns58:RiskClass>AN</ns58:RiskClass>
+                </ns58:CurrentRisk>
+                <ns58:CDDCheck />
+                <ns58:CurrentRisk>
+                  <ns58:RiskReason />
+                </ns58:CurrentRisk>
+              </ns58:RiskDetails>
+              <ns58:SourceFund xmlns:ns58="http://xmlns.osp.eas.cognizant.com/BFS/BusinessObjects/EBO/Customer/V1/KYCInformation" />
+              <ns58:RiskReAssessmentDate xmlns:ns58="http://xmlns.osp.eas.cognizant.com/BFS/BusinessObjects/EBO/Customer/V1/KYCInformation">04-NOV-2029</ns58:RiskReAssessmentDate>
+              <ns58:PEP xmlns:ns58="http://xmlns.osp.eas.cognizant.com/BFS/BusinessObjects/EBO/Customer/V1/KYCInformation">N</ns58:PEP>
+              <ns58:WebAddress xmlns:ns58="http://xmlns.osp.eas.cognizant.com/BFS/BusinessObjects/EBO/Customer/V1/KYCInformation" />
+              <ns58:OtherSourceOfIncome xmlns:ns58="http://xmlns.osp.eas.cognizant.com/BFS/BusinessObjects/EBO/Customer/V1/KYCInformation" />
+              <ns58:Nationality xmlns:ns58="http://xmlns.osp.eas.cognizant.com/BFS/BusinessObjects/EBO/Customer/V1/KYCInformation">GB</ns58:Nationality>
+              <ns58:CountryOfResidence xmlns:ns58="http://xmlns.osp.eas.cognizant.com/BFS/BusinessObjects/EBO/Customer/V1/KYCInformation">AE</ns58:CountryOfResidence>
+              <ns58:Occupation xmlns:ns58="http://xmlns.osp.eas.cognizant.com/BFS/BusinessObjects/EBO/Customer/V1/KYCInformation">101</ns58:Occupation>
+              <ns58:ValueOfCashTransactions xmlns:ns58="http://xmlns.osp.eas.cognizant.com/BFS/BusinessObjects/EBO/Customer/V1/KYCInformation" />
+              <ns58:ValueOfNonCashTransactions xmlns:ns58="http://xmlns.osp.eas.cognizant.com/BFS/BusinessObjects/EBO/Customer/V1/KYCInformation" />
+              <ns58:UAECentralBankBlacklist xmlns:ns58="http://xmlns.osp.eas.cognizant.com/BFS/BusinessObjects/EBO/Customer/V1/KYCInformation">N</ns58:UAECentralBankBlacklist>
+              <ns58:OverallRiskClassification xmlns:ns58="http://xmlns.osp.eas.cognizant.com/BFS/BusinessObjects/EBO/Customer/V1/KYCInformation">AN</ns58:OverallRiskClassification>
+              <ns58:RiskClassificationDate xmlns:ns58="http://xmlns.osp.eas.cognizant.com/BFS/BusinessObjects/EBO/Customer/V1/KYCInformation">04-NOV-2026</ns58:RiskClassificationDate>
+              <ns58:POAProvided xmlns:ns58="http://xmlns.osp.eas.cognizant.com/BFS/BusinessObjects/EBO/Customer/V1/KYCInformation">N</ns58:POAProvided>
+              <ns58:UAERulingFamily xmlns:ns58="http://xmlns.osp.eas.cognizant.com/BFS/BusinessObjects/EBO/Customer/V1/KYCInformation">N</ns58:UAERulingFamily>
+              <ns58:ListOfCountriesForFT xmlns:ns58="http://xmlns.osp.eas.cognizant.com/BFS/BusinessObjects/EBO/Customer/V1/KYCInformation">
+                <ns58:OperationType>FT</ns58:OperationType>
+                <ns58:CountryCode>AE</ns58:CountryCode>
+              </ns58:ListOfCountriesForFT>
+              <ns58:ListOfCountriesForFT xmlns:ns58="http://xmlns.osp.eas.cognizant.com/BFS/BusinessObjects/EBO/Customer/V1/KYCInformation">
+                <ns58:OperationType />
+                <ns58:CountryCode />
+              </ns58:ListOfCountriesForFT>
+              <ns58:ListOfCountriesForFT xmlns:ns58="http://xmlns.osp.eas.cognizant.com/BFS/BusinessObjects/EBO/Customer/V1/KYCInformation">
+                <ns58:OperationType />
+                <ns58:CountryCode />
+              </ns58:ListOfCountriesForFT>
+              <ns58:VersionNumber xmlns:ns58="http://xmlns.osp.eas.cognizant.com/BFS/BusinessObjects/EBO/Customer/V1/KYCInformation" />
+              <ns58:ReputationalRisk xmlns:ns58="http://xmlns.osp.eas.cognizant.com/BFS/BusinessObjects/EBO/Customer/V1/KYCInformation" />
+              <ns58:ReputationalRiskReason xmlns:ns58="http://xmlns.osp.eas.cognizant.com/BFS/BusinessObjects/EBO/Customer/V1/KYCInformation" />
+              <ns58:STRRisk xmlns:ns58="http://xmlns.osp.eas.cognizant.com/BFS/BusinessObjects/EBO/Customer/V1/KYCInformation" />
+              <ns58:STRReason xmlns:ns58="http://xmlns.osp.eas.cognizant.com/BFS/BusinessObjects/EBO/Customer/V1/KYCInformation" />
+              <ns58:CashCollectionServices xmlns:ns58="http://xmlns.osp.eas.cognizant.com/BFS/BusinessObjects/EBO/Customer/V1/KYCInformation" />
+              <ns58:CashCollectionReason xmlns:ns58="http://xmlns.osp.eas.cognizant.com/BFS/BusinessObjects/EBO/Customer/V1/KYCInformation" />
+              <ns58:ComplianceOverrideRiskRatingRequired xmlns:ns58="http://xmlns.osp.eas.cognizant.com/BFS/BusinessObjects/EBO/Customer/V1/KYCInformation" />
+              <ns58:ComplianceOverrideRiskRating xmlns:ns58="http://xmlns.osp.eas.cognizant.com/BFS/BusinessObjects/EBO/Customer/V1/KYCInformation" />
+              <ns58:ComplianceOverrideReason xmlns:ns58="http://xmlns.osp.eas.cognizant.com/BFS/BusinessObjects/EBO/Customer/V1/KYCInformation" />
+              <ns58:CashIntensive xmlns:ns58="http://xmlns.osp.eas.cognizant.com/BFS/BusinessObjects/EBO/Customer/V1/KYCInformation" />
+              <ns58:CashIntensiveReason xmlns:ns58="http://xmlns.osp.eas.cognizant.com/BFS/BusinessObjects/EBO/Customer/V1/KYCInformation" />
+              <ns58:LastReviewDate xmlns:ns58="http://xmlns.osp.eas.cognizant.com/BFS/BusinessObjects/EBO/Customer/V1/KYCInformation">04-NOV-2026</ns58:LastReviewDate>
+            </ns64:IndividualKYCInformation>
+          </ns64:IndividualKYCInformations>
+          <ns64:CorporateKYCInformations>
+            <ns64:CorporateKYCInformation>
+              <ns58:BusinessDealings xmlns:ns58="http://xmlns.osp.eas.cognizant.com/BFS/BusinessObjects/EBO/Customer/V1/KYCInformation" />
+            </ns64:CorporateKYCInformation>
+          </ns64:CorporateKYCInformations>
+        </ns64:KYCInformation>
+        <ns64:FATCAInformation>
+          <ns64:IndividualFATCAInformations>
+            <ns64:IndividualFATCAInformation>
+              <ns151:Nationality xmlns:ns151="http://xmlns.osp.eas.cognizant.com/BFS/BusinessObjects/EBO/Customer/V1/FATCAInformation">GB</ns151:Nationality>
+              <ns151:OriginCountry xmlns:ns151="http://xmlns.osp.eas.cognizant.com/BFS/BusinessObjects/EBO/Customer/V1/FATCAInformation">GB</ns151:OriginCountry>
+              <ns151:NonUAEResident xmlns:ns151="http://xmlns.osp.eas.cognizant.com/BFS/BusinessObjects/EBO/Customer/V1/FATCAInformation">R</ns151:NonUAEResident>
+              <ns151:CRSAccountClass xmlns:ns151="http://xmlns.osp.eas.cognizant.com/BFS/BusinessObjects/EBO/Customer/V1/FATCAInformation" />
+              <ns151:FATCACRSTaxDetails xmlns:ns151="http://xmlns.osp.eas.cognizant.com/BFS/BusinessObjects/EBO/Customer/V1/FATCAInformation" />
+            </ns64:IndividualFATCAInformation>
+          </ns64:IndividualFATCAInformations>
+        </ns64:FATCAInformation>
+        <ns64:CRATInformation>
+          <ns152:ReserveField1 />
+          <ns152:ReserveField2>N</ns152:ReserveField2>
+          <IndividualDetails xmlns="">
+            <SourceIncome />
+            <PersonalAccount />
+            <RelationshipBank>NR000</RelationshipBank>
+            <MONCASHDEPT>0</MONCASHDEPT>
+            <AverageAccBalance />
+          </IndividualDetails>
+        </ns64:CRATInformation>
+      </ns64:CustomerInformation>
+      <AccountDetails>
+        <ns67:AccountInformation xmlns:ns67="http://xmlns.osp.eas.cognizant.com/BFS/BusinessObjects/EBO/Bank/V1/Account/AccountInformation">
+          <ns67:AccountDetails>
+            <ns67:AccountDetail>
+              <ns67:AccountIdentifier />
+              <ns67:Currency />
+              <ns67:AccountType />
+              <ns66:ContactInformation xmlns:ns66="http://xmlns.osp.eas.cognizant.com/BFS/BusinessObjects/EBO/CommonComponents/V1/ContactInformation">
+                <ns62:PostalAddress xmlns:ns62="http://xmlns.osp.eas.cognizant.com/BFS/BusinessObjects/EBO/CommonComponents/V1/PostalAddress">
+                  <ns62:AddressLine>
+                    <ns62:AddressLine1 />
+                    <ns62:AddressLine2 />
+                    <ns62:AddressLine3 />
+                    <ns62:AddressLine4 />
+                  </ns62:AddressLine>
+                </ns62:PostalAddress>
+              </ns66:ContactInformation>
+            </ns67:AccountDetail>
+          </ns67:AccountDetails>
+        </ns67:AccountInformation>
+      </AccountDetails>
+    </CustomersDetails>
+  </MessageResponseBody>
+</GetCustomerInformationResponse>
