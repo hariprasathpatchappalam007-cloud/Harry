@@ -1,10 +1,10 @@
 Dear Dalip,
 
-Following our meeting, as an action item, we were required to share the current processing logic and data dump.
+Kindly raise a new demand to incorporate the below requirement.
 
-We have created a page explaining the current implementation of the Arrangement Fee processing. The page also includes links to the configured `arrangement_fee_master` and Promotion details.
+This requirement may involve significant code changes, including the implementation of the maximum cap. Currently, the maximum cap is configured for each product combination and residency type. Based on your requirement, it also appears that the Arrangement Fee Master needs to be exposed.
 
-Kindly review the information and let us know if you need any further clarification.
+Once the demand is raised, we will conduct a formal grooming session, if required. Otherwise, we will proceed directly with the formal FSD, followed by implementation, UAT, staging and production deployment.
 
 Regards,  
 Hariprasath
