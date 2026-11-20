@@ -15,8 +15,8 @@
         h1 { margin-bottom: 8px; font: 500 36px/1.15 Georgia, "Times New Roman", serif; }
         header .intro { max-width: 790px; margin: 0; color: #e0eeeb; font-size: 15px; }
         main { max-width: 1100px; margin: 0 auto; padding: 24px 22px 40px; }
-        .scope { margin: 0 0 22px; padding: 13px 15px; border-left: 4px solid var(--coral); background: var(--coral-pale); }
-        .scope strong { display: block; margin-bottom: 3px; }
+        .master-access { margin: 12px 0 0; padding: 11px 14px; border-left: 4px solid var(--teal); background: var(--teal-pale); }
+        .master-access a { color: #075957; font-weight: 700; }
         section { margin: 0 0 24px; }
         h2 { margin-bottom: 10px; font: 500 24px/1.2 Georgia, "Times New Roman", serif; }
         h3 { margin-bottom: 5px; font-size: 14px; }
@@ -54,8 +54,6 @@
         <p class="intro">A one-page summary of PROC_Lead_Arrangement_FEE and its current seeded promotion rules. This describes the implementation, not a proposed fee policy.</p>
     </header>
     <main>
-                <div class="scope"><strong>Scope</strong>This guide excludes the newer ArrFeeRequiremnt.csv requirements and all STL/NSTL-specific handling. It is not a complete description of every branch in the procedure.</div>
-
                 <section>
                     <h2>Which master supplies which rate?</h2>
                     <div class="master-grid">
@@ -68,6 +66,8 @@
                             <p><strong>This supplies a promotion discount, not the component fee rates.</strong> Its discount percentage may reduce the calculated fee later, when the promotion configuration allows it and an eligible Active row passes the procedure's date check. Special promotion rules are stored separately.</p>
                         </div>
                     </div>
+                    <p class="note"><strong>ACC</strong> is the ACC allocation portion of the total arrangement fee, returned as <code>ARRANGEMENT_FEE_ACC</code>. It is not a separate rate. The procedure does not document a formal full expansion of the acronym.</p>
+                    <p class="master-access">Use the <a href="http://10.224.3.14/hf48/LeadFeeMasterMaker.aspx">Lead Fee Master Maker</a> to access the Arrangement Fee Master and Promotion Master.</p>
                 </section>
 
         <section>
@@ -127,7 +127,7 @@
             <div class="warning"><strong>Configuration note:</strong>These are the current seeded rules; administrator changes can alter runtime behavior. This guide intentionally excludes all STL/NSTL handling and any rules from ArrFeeRequiremnt.csv.</div>
         </section>
 
-        <footer>Source reviewed: SQL/PROC_Lead_Arrangement_FEE.sql and SQL/24_Lead_Fee_Master_MakerChecker.sql. The active database configuration may differ from the initial seed.</footer>
+        <footer>The active database configuration may differ from the initial seed.</footer>
     </main>
 </body>
 </html>
