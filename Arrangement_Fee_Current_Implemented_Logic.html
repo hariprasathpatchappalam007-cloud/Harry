@@ -29,6 +29,9 @@
         .grid { display: grid; grid-template-columns: 1.1fr .9fr; gap: 18px; }
         .panel { padding: 15px 16px; border: 1px solid var(--line); background: var(--white); }
         .panel p:last-child { margin-bottom: 0; }
+        .master-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+        .master-card { padding: 14px 15px; border-top: 3px solid var(--teal); background: var(--white); }
+        .master-card:nth-child(2) { border-top-color: var(--coral); }
         .table-wrap { overflow-x: auto; border: 1px solid var(--line); background: var(--white); }
         table { width: 100%; border-collapse: collapse; text-align: left; }
         th, td { padding: 9px 11px; border-bottom: 1px solid var(--line); vertical-align: top; }
@@ -40,6 +43,7 @@
         .warning { margin-top: 12px; padding: 12px 14px; border-left: 4px solid #a76e13; background: var(--gold-pale); }
         footer { padding-top: 12px; border-top: 1px solid var(--line); color: var(--muted); font-size: 11px; }
         @media (max-width: 760px) { .flow { grid-template-columns: repeat(2, minmax(0, 1fr)); } .grid { grid-template-columns: 1fr; } h1 { font-size: 30px; } }
+        @media (max-width: 620px) { .master-grid { grid-template-columns: 1fr; } }
         @media print { body { background: #fff; } header { padding: 22px; } main { padding: 18px 0; } .panel, .step { break-inside: avoid; } }
     </style>
 </head>
@@ -51,6 +55,20 @@
     </header>
     <main>
                 <div class="scope"><strong>Scope</strong>This guide excludes the newer ArrFeeRequiremnt.csv requirements and all STL/NSTL-specific handling. It is not a complete description of every branch in the procedure.</div>
+
+                <section>
+                    <h2>Which master supplies which rate?</h2>
+                    <div class="master-grid">
+                        <div class="master-card">
+                            <h3>Arrangement Fee Master (LEAD_ARR_FEE_MASTER)</h3>
+                            <p><strong>This is the source of the base fee rates.</strong> The procedure matches a row by product, subtype, residency and staff status, then applies its component percentages to the corresponding finance and other amounts. The row also supplies the minimum, maximum, APP/ACC split and VAT setting.</p>
+                        </div>
+                        <div class="master-card">
+                            <h3>Promotion Master (Lead_Promotion_master)</h3>
+                            <p><strong>This supplies a promotion discount, not the component fee rates.</strong> Its discount percentage may reduce the calculated fee later, when the promotion configuration allows it and an eligible Active row passes the procedure's date check. Special promotion rules are stored separately.</p>
+                        </div>
+                    </div>
+                </section>
 
         <section>
             <h2>Calculation sequence</h2>
