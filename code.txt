@@ -1,0 +1,7 @@
+Dear Khushbu,
+
+The reason this defect was assigned to Ayub is that the CIF associated with the contract has either reached its limit or the asset has been frozen, resulting in the contract booking failure.
+
+Since increasing the limit and removing the asset freeze fall under the scope of the Limit Management System, the defect appears to have been assigned to their team.
+
+Request the Limit Management team to investigate and resolve the issue.
