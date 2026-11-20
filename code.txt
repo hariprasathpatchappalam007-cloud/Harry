@@ -1,7 +1,10 @@
-Dear Khushbu,
+Dear Dalip,
 
-The reason this defect was assigned to Ayub is that the CIF associated with the contract has either reached its limit or the asset has been frozen, resulting in the contract booking failure.
+Following our meeting, as an action item, we were required to share the current processing logic and data dump.
 
-Since increasing the limit and removing the asset freeze fall under the scope of the Limit Management System, the defect appears to have been assigned to their team.
+We have created a page explaining the current implementation of the Arrangement Fee processing. The page also includes links to the configured `arrangement_fee_master` and Promotion details.
 
-Request the Limit Management team to investigate and resolve the issue.
+Kindly review the information and let us know if you need any further clarification.
+
+Regards,  
+Hariprasath
