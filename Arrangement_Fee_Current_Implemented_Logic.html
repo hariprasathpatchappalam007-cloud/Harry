@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="One-page summary of the currently implemented arrangement-fee procedure, excluding new fee requirements and STL/NSTL-specific logic." />
+    <title>Arrangement Fee | Current Implemented Logic</title>
+    <style>
+        :root { --ink: #19363b; --muted: #52686b; --paper: #f4f6f3; --white: #fff; --line: #d3ddda; --teal: #087c78; --teal-pale: #e2f1ed; --coral: #b95740; --coral-pale: #fae9e3; --gold-pale: #fff1d2; }
+        * { box-sizing: border-box; }
+        body { margin: 0; background: var(--paper); color: var(--ink); font: 15px/1.55 "Aptos", "Avenir Next", "Trebuchet MS", sans-serif; }
+        header { padding: 34px max(22px, calc((100vw - 1060px) / 2)); color: var(--white); background: linear-gradient(120deg, #123d43, #087c78); }
+        header p { margin: 0 0 8px; color: #b9e2d9; font-size: 11px; font-weight: 800; text-transform: uppercase; }
+        h1, h2, h3 { margin-top: 0; }
+        h1 { margin-bottom: 8px; font: 500 36px/1.15 Georgia, "Times New Roman", serif; }
+        header .intro { max-width: 790px; margin: 0; color: #e0eeeb; font-size: 15px; }
+        main { max-width: 1100px; margin: 0 auto; padding: 24px 22px 40px; }
+        .scope { margin: 0 0 22px; padding: 13px 15px; border-left: 4px solid var(--coral); background: var(--coral-pale); }
+        .scope strong { display: block; margin-bottom: 3px; }
+        section { margin: 0 0 24px; }
+        h2 { margin-bottom: 10px; font: 500 24px/1.2 Georgia, "Times New Roman", serif; }
+        h3 { margin-bottom: 5px; font-size: 14px; }
+        p { margin: 6px 0 10px; }
+        .flow { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin: 12px 0 16px; }
+        .step { min-height: 85px; padding: 11px; border-top: 3px solid var(--teal); background: var(--white); }
+        .step b { display: block; margin-bottom: 4px; color: var(--coral); font-size: 10px; }
+        .step span { font-size: 12px; font-weight: 700; }
+        .step small { display: block; margin-top: 3px; color: var(--muted); font-size: 11px; }
+        .grid { display: grid; grid-template-columns: 1.1fr .9fr; gap: 18px; }
+        .panel { padding: 15px 16px; border: 1px solid var(--line); background: var(--white); }
+        .panel p:last-child { margin-bottom: 0; }
+        .table-wrap { overflow-x: auto; border: 1px solid var(--line); background: var(--white); }
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th, td { padding: 9px 11px; border-bottom: 1px solid var(--line); vertical-align: top; }
+        th { background: #e9f1ee; color: #29484d; font-size: 10px; text-transform: uppercase; }
+        td { font-size: 12px; }
+        tbody tr:last-child td { border-bottom: 0; }
+        .formula { margin: 10px 0; padding: 12px 14px; border-left: 4px solid var(--teal); background: var(--teal-pale); font: 17px/1.4 Georgia, "Times New Roman", serif; }
+        .note { color: var(--muted); font-size: 11px; }
+        .warning { margin-top: 12px; padding: 12px 14px; border-left: 4px solid #a76e13; background: var(--gold-pale); }
+        footer { padding-top: 12px; border-top: 1px solid var(--line); color: var(--muted); font-size: 11px; }
+        @media (max-width: 760px) { .flow { grid-template-columns: repeat(2, minmax(0, 1fr)); } .grid { grid-template-columns: 1fr; } h1 { font-size: 30px; } }
+        @media print { body { background: #fff; } header { padding: 22px; } main { padding: 18px 0; } .panel, .step { break-inside: avoid; } }
+    </style>
+</head>
+<body>
+    <header>
+        <p>Current SQL behavior | Arrangement fees</p>
+        <h1>How the implemented fee is calculated</h1>
+        <p class="intro">A one-page summary of PROC_Lead_Arrangement_FEE and its current seeded promotion rules. This describes the implementation, not a proposed fee policy.</p>
+    </header>
+    <main>
+                <div class="scope"><strong>Scope</strong>This guide excludes the newer ArrFeeRequiremnt.csv requirements and all STL/NSTL-specific handling. It is not a complete description of every branch in the procedure.</div>
+
+        <section>
+            <h2>Calculation sequence</h2>
+            <div class="flow">
+                <div class="step"><b>01 | MATCH</b><span>Find the fee row</span><small>Product, subtype, residency and staff</small></div>
+                <div class="step"><b>02 | ADJUST RATES</b><span>Apply pre-calculation rules</span><small>Promotion-specific component rates</small></div>
+                <div class="step"><b>03 | CALCULATE</b><span>Build the base fee</span><small>Component amounts, then min/max</small></div>
+                <div class="step"><b>04 | APPLY EXCEPTIONS</b><span>Run later rules</span><small>Project, promotion and master discount</small></div>
+                <div class="step"><b>05 | FINALIZE</b><span>VAT and output</span><small>Return total and APP/ACC amounts</small></div>
+            </div>
+            <div class="formula">Base fee = sum of each fee-master rate (%) multiplied by its corresponding finance, property, buyout, top-up, equity, cash-out or MBRE amount.</div>
+            <p class="note">A missing matching fee-master row stops calculation with an arrangement-fee-not-defined error. This guide omits the STL/NSTL override branch.</p>
+        </section>
+
+        <section class="grid">
+            <div class="panel">
+                <h2>Base fee and limits</h2>
+                <p>Non-staff customers use the component calculation above. The procedure applies the matched row's minimum and maximum unless a configured promotion skips a limit.</p>
+                <p>Staff customers take a flat base fee of 3,500, allocated as APP 0 and ACC 3,500, instead of the standard percentage-and-cap calculation.</p>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>Situation</th><th>Implemented maximum adjustment</th></tr></thead>
+                        <tbody>
+                            <tr><td>Standard Ijara / Standard</td><td>60,000 when finance is above 7 million and below 15 million; 100,000 at 15 million or more.</td></tr>
+                            <tr><td>Resident / Company Resident, qualifying Commercial, Equity Release or Standard Ijara Buyout/Topup cases</td><td>60,000 through 15 million; 250,000 above 15 million.</td></tr>
+                            <tr><td>Other products</td><td>Uses the matched fee-row maximum, with the general 15-million adjustment where applicable. Subvention subtypes are excluded from that general adjustment; a separate resident/non-staff subvention rule applies.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="panel">
+                <h2>Project exception</h2>
+                <p>For project ID <strong>PRE_APPROVAL</strong>, after post-base promotion rules:</p>
+                <p>If ACC is non-zero, the total becomes 1,500, APP becomes 0, and ACC becomes 1,500. If ACC is zero, all fee amounts become zero. Staff status is reset to No.</p>
+                <h3>Discount and VAT order</h3>
+                <p>Eligible master discount is applied after the pre-master-discount rules. Post-master rules then run, followed by VAT when applicable. VAT percentage comes from the shared lead constant.</p>
+                <p class="note">The current master-discount date condition checks start date on/after today and end date on/before today; confirm this coded behavior before relying on dated discounts.</p>
+            </div>
+        </section>
+
+        <section>
+            <h2>Current seeded promotion rules</h2>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>Promotion</th><th>Implemented effect</th></tr></thead>
+                    <tbody>
+                        <tr><td>ARADA, DEYAAR, Bloom Holding, Dubai South Properties</td><td>Subtracts 0.25 percentage points from each positive component rate before base calculation. It can operate without a promotion-master row; any eligible master discount may also apply.</td></tr>
+                        <tr><td>Processing Fee Promotion 0.50%</td><td>For Resident customers, sets the finance-value rate to 0.50%; Equity Release Buyout/Topup uses a 0.50% cash-out rate instead.</td></tr>
+                        <tr><td>APC Promotion</td><td>For Equity Release except Swap and Buyout, discounts the post-base fee by 25%. A result below 5,000 is raised to 5,000 and assigned entirely to ACC.</td></tr>
+                        <tr><td>TopUp Promotion</td><td>For Equity Release / Topup, charges 0.50% of the top-up amount, with a 5,000 minimum assigned entirely to ACC.</td></tr>
+                        <tr><td>Aggregator-Equity Release-Standard</td><td>Sets ACC to 1.25% of equity, adds the current APP amount, and enables VAT.</td></tr>
+                        <tr><td>SLS WoW Dubai Promotion</td><td>Looks up the fee row as Forward Ijara / OPF and restores the original product and subtype in the returned result.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="warning"><strong>Configuration note:</strong>These are the current seeded rules; administrator changes can alter runtime behavior. This guide intentionally excludes all STL/NSTL handling and any rules from ArrFeeRequiremnt.csv.</div>
+        </section>
+
+        <footer>Source reviewed: SQL/PROC_Lead_Arrangement_FEE.sql and SQL/24_Lead_Fee_Master_MakerChecker.sql. The active database configuration may differ from the initial seed.</footer>
+    </main>
+</body>
+</html>
