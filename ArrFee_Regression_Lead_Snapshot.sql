@@ -4,6 +4,7 @@ SET NOCOUNT ON;
 
 DECLARE @RegressionLeads TABLE
 (
+    InputOrder INT IDENTITY(1,1) NOT NULL,
     RequestedGroup NVARCHAR(30) NOT NULL,
     LeadNo NVARCHAR(100) NOT NULL
 );
@@ -206,51 +207,53 @@ VALUES
     (N'Pre-approval', N'LD-00127417'),
     (N'Pre-approval', N'LD-00127416');
 
-SELECT
+;WITH RankedLeads AS
+(
+    SELECT
+        RequestedGroup,
+        LeadNo,
+        ROW_NUMBER() OVER (PARTITION BY RequestedGroup ORDER BY InputOrder) AS GroupRow
+    FROM @RegressionLeads
+),
+SelectedLeads AS
+(
+    SELECT RequestedGroup, LeadNo FROM RankedLeads WHERE RequestedGroup=N'Start reference'
+    UNION ALL
+    SELECT RequestedGroup, LeadNo FROM RankedLeads WHERE RequestedGroup=N'Non-Pre-approval' AND GroupRow <= 34
+    UNION ALL
+    SELECT RequestedGroup, LeadNo FROM RankedLeads WHERE RequestedGroup=N'Pre-approval' AND GroupRow <= 35
+)
+SELECT TOP (70)
     supplied.RequestedGroup,
-    ld.Lead_No,
+    supplied.LeadNo,
+    CASE WHEN ld.Lead_No IS NULL THEN N'Not found' ELSE N'Found' END AS LeadRecordStatus,
     CASE WHEN ldp.property_projectid = N'PRE_APPROVAL' THEN N'Pre-approval' ELSE N'Non-pre-approval' END AS ActualProjectScenario,
     ldf.lead_product AS ProductType,
     ldf.LEAD_FIN_REFINANCETYPE AS ProductSubType,
     ld.CUSTOMER_RES_TYPE AS ResidencyType,
-    ldo.staffyn AS RawStaffYN,
+    CASE WHEN ISNULL(ldo.staffyn, N'') IN (N'', N'0') THEN N'No' ELSE ldo.staffyn END AS StaffYN,
     ldo.Relationship_with_bank AS RelationshipWithBank,
     ld.Lead_Source_OF_Submission AS SourceSubmission,
     ldp.property_projectid AS ProjectId,
     ldp.Property_DeveloperName AS DeveloperName,
-    ldf.finance_amount AS FinanceAmount_DIB,
+    ldf.finance_amount AS FinanceAmount,
     ldf.lead_fin_Equity_amt AS EquityReleaseAmount,
     ldf.MBRE_AMOUNT AS GHPAmount_MBRE,
-    CASE WHEN ISNULL(ldf.MBRE_AMOUNT, 0) > 0 THEN N'Yes' ELSE N'No' END AS HasGHPAmount,
-    ldf.lead_prop_org_value AS OriginalPropertyValue,
-    ldf.lead_prop_appr_value AS AppraisedPropertyValue,
-    ldf.lead_fin_buyout_repay_amt AS BuyoutAmount,
-    ldf.lead_fin_topup_amt AS TopupAmount,
-    ldf.lead_fin_cashout_amt AS CashoutAmount,
     ldf.lead_fin_promotiontype AS PromotionName,
     promotion.DiscountPerc AS PromotionDiscountPercent,
     promotion.Status AS PromotionMasterStatus,
-    promotion.StartDate AS PromotionStartDate,
-    promotion.EndDate AS PromotionEndDate,
     promotionConfig.IsEnabled AS PromotionConfigEnabled,
     promotionConfig.UseMasterDiscount,
     promotionConfig.SkipMinFee,
     promotionConfig.SkipMaxFee,
     feeMaster.FEE_FV,
-    feeMaster.FEE_OPV,
-    feeMaster.FEE_APV,
-    feeMaster.FEE_Buyout,
-    feeMaster.FEE_Topup,
     feeMaster.FEE_Equity,
-    feeMaster.FEE_Cashout,
     feeMaster.FEE_MBRE,
-    feeMaster.FEE_APP,
-    feeMaster.FEE_ACC,
     feeMaster.MIN_FEE,
     feeMaster.MAX_FEE,
     feeMaster.Status AS FeeMasterStatus,
     feeMaster.Is_VAT_Applicable
-FROM @RegressionLeads supplied
+FROM SelectedLeads supplied
 LEFT JOIN dbo.LEAD_DETAILS ld ON ld.LEAD_NO = supplied.LeadNo
 LEFT JOIN dbo.LEAD_DETAILS_FINANCE ldf ON ldf.LEAD_NO = supplied.LeadNo
 LEFT JOIN dbo.LEAD_DETAILS_OTHERS ldo ON ldo.LEAD_NO = supplied.LeadNo
@@ -282,5 +285,5 @@ OUTER APPLY
     ORDER BY CASE WHEN ISNULL(fm.Status, N'A') = N'A' THEN 0 ELSE 1 END
 ) feeMaster
 ORDER BY
-    CASE supplied.RequestedGroup WHEN N'Non-Pre-approval' THEN 0 ELSE 1 END,
+    CASE supplied.RequestedGroup WHEN N'Start reference' THEN 0 WHEN N'Non-Pre-approval' THEN 1 ELSE 2 END,
     supplied.LeadNo;
