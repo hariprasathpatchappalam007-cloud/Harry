@@ -1,0 +1,8 @@
+AXIS: Baseline comparisons that change one dimension at a time: STL vs NSTL, and regular vs pre-approval. These use a standard resident, non-staff case.
+ER: Equity Release-specific cases. They test non-Aggregator and Aggregator calculations, amounts below and above the AED 5,250 minimum, non-resident no-maximum behavior, GHP combinations, and the Abu Dhabi Aggregator exception.
+CONVERSION: DIB Sustainable promotion tests with conversion-product prefixes MB, NB, and TW. These exercise the rules that can skip the promotion-master discount.
+MASTER: One representative case for each active product/subtype combination in the Arrangement Fee Master.
+PROMOTION: One regular-path case for each active promotion name.
+PROMOTION-PRE-APPROVAL: Selected promotion cases repeated through the pre-approval path.
+GHP: Cases with a positive MBRE_AMOUNT, which you identified as the GHP amount; these check the nil-fee portion and Aggregator Equity Release interaction.
+STAFF: Staff cases that exercise the flat 3,500 fee and staff combinations with Equity Release/GHP.
