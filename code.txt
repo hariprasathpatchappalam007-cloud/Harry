@@ -1,10 +1,25 @@
+The table has been designed based on the Source Input(CRM) so for the need for Mobile or email can only be answered by the source team
+
+The table has been designed based on the source input (CRM). Therefore, only the source team can clarify why mobile number or email details have been included.
+However, those fields are optional fields
+
 Dear Dalip,
 
-Kindly raise a new demand to incorporate the below requirement.
+For the attached FSD (CPR Consent), an additional requirement has been raised by the Data Governance team regarding changes to the application form.
 
-This requirement may involve significant code changes, including the implementation of the maximum cap. Currently, the maximum cap is configured for each product combination and residency type. Based on your requirement, it also appears that the Arrangement Fee Master needs to be exposed.
+The proposed changes need to be incorporated into the Customer Consent and Declaration section on page 7 of the application form.
 
-Once the demand is raised, we will conduct a formal grooming session, if required. Otherwise, we will proceed directly with the formal FSD, followed by implementation, UAT, staging and production deployment.
+Could you please review the requirement and provide your concurrence to incorporate these changes? Once agreed, the same will be documented in the FSD.
 
-Regards,  
+Dear Abdul,
+
+While making the changes to the corresponding table, your comments seem to have been removed.
+
+Your question was regarding which FSD should be referred to if the said requirement was not delivered through the HFLMS FSD.
+
+My suggestion is to please liaise with Ismayil on this matter, as he has complete knowledge of the implementation details and can guide you on the relevant FSD.
+
+Regards,
 Hariprasath
+
+
