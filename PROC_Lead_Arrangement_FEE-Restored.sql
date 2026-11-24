@@ -144,16 +144,40 @@ BEGIN
 	--exec PROC_Lead_Arrangement_FEE 'LD-00091535' --26250.00 --13125.00
 	if ISNULL(@promotiontype, '') = 'Processing Fee Promotion 0.50%'
 	begin
-		if (@PRODUCT_TYPE = 'Equity Release' and (@Product_SubTYPE = 'Buyout' or @Product_SubTYPE = 'Topup') AND ISNULL(@CUSTOMER_RES_TYPE,'') = 'Resident')
-		BEGIN
-			SET @FEE_Cashout = '0.50'
-			set @FEE_FV = '0.00'
-		END
-		else if (ISNULL(@CUSTOMER_RES_TYPE,'') = 'Resident')
-		BEGIN
-			SET @FEE_Cashout = '0.00'
-			set @FEE_FV = '0.50'
-		END
+		--if (@PRODUCT_TYPE = 'Equity Release' and (@Product_SubTYPE = 'Buyout' or @Product_SubTYPE = 'Topup') AND ISNULL(@CUSTOMER_RES_TYPE,'') = 'Resident')
+		--BEGIN
+		--	SET @FEE_Cashout = '0.50'
+		--	set @FEE_FV = '0.00'
+		--END
+		--else if (ISNULL(@CUSTOMER_RES_TYPE,'') = 'Resident')
+		--BEGIN
+		--	SET @FEE_Cashout = '0.00'
+		--	set @FEE_FV = '0.50'
+		--END
+
+		If @FEE_FV > 0
+  SET @FEE_FV = @FEE_FV / 2
+
+If @FEE_OPV > 0
+  SET @FEE_OPV = @FEE_OPV  / 2
+
+If @FEE_APV > 0
+  SET @FEE_APV = @FEE_APV  / 2
+
+If @FEE_Buyout > 0
+  SET @FEE_Buyout = @FEE_Buyout  / 2
+
+If @FEE_Topup > 0
+  SET @FEE_Topup = @FEE_Topup  / 2
+
+If @FEE_Equity > 0
+  SET @FEE_Equity = @FEE_Equity  / 2
+
+If @FEE_Cashout > 0
+  SET @FEE_Cashout = @FEE_Cashout  / 2
+
+If @FEE_MBRE > 0
+  SET @FEE_MBRE = @FEE_MBRE   / 2
 	end
 
 	print 'test4'
@@ -387,23 +411,23 @@ BEGIN
 
 	if (@PRODUCT_TYPE = 'Equity Release' and @Source_Submission='Aggregator')
 	BEGIN
-		if @promotiontype='Aggregator-STL-Equity Release'
+		if @promotiontype='Aggregator—STL—Equity Release'
 		begin
 			Set @ARRANGEMENT_FEE_ACC= @AMT_Equity*0.01
 			Set @ARRANGEMENT_FEE=@ARRANGEMENT_FEE_ACC + @ARRANGEMENT_FEE_APP
-			print'Aggregator-STL-Equity Release'
+			print'Aggregator—STL—Equity Release'
 			print @ARRANGEMENT_FEE_ACC
 			print @ARRANGEMENT_FEE_APP
 			print @ARRANGEMENT_FEE
 		end
-		else if @promotiontype='Aggregator-NSTL-Equity Release'
+		else if @promotiontype='Aggregator—NSTL—Equity Release'
 		Begin
 			Declare @EquityProcessingFee Decimal(18,2)=0
 			SET @EquityProcessingFee=@AMT_Equity*0.01
 			Set @ARRANGEMENT_FEE_ACC=@EquityProcessingFee
 			Set @ARRANGEMENT_FEE=@ARRANGEMENT_FEE_ACC + @ARRANGEMENT_FEE_APP
 		End
-		else if @promotiontype='Aggregator-Equity Release-Standard'
+		else if @promotiontype='Aggregator—Equity Release—Standard'
 		Begin
 			Declare @EquityStandardProcessingFee Decimal(18,2)=0
 			SET @EquityStandardProcessingFee=@AMT_Equity*0.0125
