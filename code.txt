@@ -1,0 +1,10 @@
+Deploy the entire publish output folder, not just DIBCharges.Worker.exe. The deployment guide publishes it to artifacts\publish; that folder contains the worker plus its DLLs, runtime files, configuration, and dependencies.
+
+The code change is in Program.cs: the worker’s Windows service name is now DIBCharges, matching the SCM service name you created.
+
+On the build machine, republish:
+
+
+On the target machine, stop the service, copy the full contents of the new publish folder to C:\DIBCharges, then start it again. Preserve your environment-specific appsettings.json if you have configured it. Since your existing service is already registered as DIBCharges, you do not need to delete and recreate it.
+
+The instruction change in deployment-guide.md is to quote the executable path in the sc.exe create command and explain that the service name must match the worker’s configured name.
