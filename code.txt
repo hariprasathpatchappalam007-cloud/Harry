@@ -1,14 +1,23 @@
-The Worker is configured to write logs to the Windows Application event log, not to a separate log file. Look in Event Viewer → Windows Logs → Application, filtering for source DIB Charges. You can also query recent entries in PowerShell:
-$since = (Get-Date).AddHours(-4)
-Get-WinEvent -FilterHashtable @{
-    LogName = 'Application'
-    ProviderName = 'DIB Charges'
-    StartTime = $since
-} | Sort-Object TimeCreated -Descending |
-    Select-Object -First 100 TimeCreated, LevelDisplayName, Message |
-    Format-List
+Read 
+Completed with input: {
+  "path": "C:\\Users\\Abinaya\\source\\GITHub\\DIBcharges\\src\\DIBCharges.Worker\\ChargeProcessingOptions.cs"
+}
 
+The log shows that the service **started and the SME schedule fired**, so the 1053 start problem appears resolved. The cycle then stopped immediately because required output paths and the SME file prefix are blank.
 
-The worker logs when the scheduler starts, when a charge cycle starts and completes, and when it fails. Those messages are in Worker.cs. It doesn’t currently log detailed calculation steps—such as reading SME rows, calculating individual charges, or inserting results—and it doesn’t create log files. Those steps are handled in ChargeCycleProcessor.cs.
+`GetPaths` checks those settings before making any repository calls, so **this attempt did not reach database lookup or charge calculation**. See `ChargeProcessingOptions.cs`.
 
-For your test, confirm the service is Running, set ChargeSchedule:Sme:Enabled to true, and use the server’s local time. Restart the service after changing the schedule. A “Completed SME charge cycle” entry confirms the cycle returned without an error, but doesn’t prove calculations ran: the processor can skip work if that output was already recorded. As configured, the logs won’t tell you whether a particular calculation event or row was processed.
+In `C:\DIBCharges\appsettings.json`, configure these `ChargeProcessing` settings with approved test locations:
+
+```json
+"ChargeProcessing": {
+  "SmeOutputDirectory": "C:\\DIBCharges\\test\\sme-output",
+  "SmeArchiveDirectory": "C:\\DIBCharges\\test\\sme-archive",
+  "SplitDirectory": "C:\\DIBCharges\\test\\split",
+  "SmeFilePrefix": "SME_TEST_"
+}
+```
+
+Merge these into the existing `ChargeProcessing` section—don’t replace its other settings. Create the directories and grant the service account permission to write there.
+
+**Keep `ChargeSchedule:Sme:Enabled` false while configuring and checking the paths.** Once you enable it and restart the service, a schedule time that has already passed can cause the cycle to run on the next poll. The cycle may then read database data, calculate/insert charges, and generate files. Enable it only when those effects are intended.
