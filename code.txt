@@ -1,4 +1,12 @@
-sc.exe stop DIBCharges
-sc.exe delete DIBCharges
-sc.exe create DIBCharges binPath= '"C:\DIBCharges\DIBCharges.Worker.exe"' start= demand DisplayName= 'DIB Charges Worker'
-sc.exe start DIBCharges
+sc.exe qc DIBCharges
+sc.exe queryex DIBCharges
+
+$since = (Get-Date).AddMinutes(-15)
+Get-WinEvent -FilterHashtable @{ LogName = 'System'; ProviderName = 'Service Control Manager'; StartTime = $since } |
+    Select-Object TimeCreated, Id, Message |
+    Format-List
+
+Get-WinEvent -FilterHashtable @{ LogName = 'Application'; StartTime = $since } |
+    Where-Object { $_.ProviderName -match 'DIB Charges|.NET Runtime|Application Error' } |
+    Select-Object TimeCreated, ProviderName, Id, Message |
+    Format-List
