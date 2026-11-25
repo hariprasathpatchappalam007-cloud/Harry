@@ -1,12 +1,14 @@
-sc.exe qc DIBCharges
-sc.exe queryex DIBCharges
-
-$since = (Get-Date).AddMinutes(-15)
-Get-WinEvent -FilterHashtable @{ LogName = 'System'; ProviderName = 'Service Control Manager'; StartTime = $since } |
-    Select-Object TimeCreated, Id, Message |
+The Worker is configured to write logs to the Windows Application event log, not to a separate log file. Look in Event Viewer → Windows Logs → Application, filtering for source DIB Charges. You can also query recent entries in PowerShell:
+$since = (Get-Date).AddHours(-4)
+Get-WinEvent -FilterHashtable @{
+    LogName = 'Application'
+    ProviderName = 'DIB Charges'
+    StartTime = $since
+} | Sort-Object TimeCreated -Descending |
+    Select-Object -First 100 TimeCreated, LevelDisplayName, Message |
     Format-List
 
-Get-WinEvent -FilterHashtable @{ LogName = 'Application'; StartTime = $since } |
-    Where-Object { $_.ProviderName -match 'DIB Charges|.NET Runtime|Application Error' } |
-    Select-Object TimeCreated, ProviderName, Id, Message |
-    Format-List
+
+The worker logs when the scheduler starts, when a charge cycle starts and completes, and when it fails. Those messages are in Worker.cs. It doesn’t currently log detailed calculation steps—such as reading SME rows, calculating individual charges, or inserting results—and it doesn’t create log files. Those steps are handled in ChargeCycleProcessor.cs.
+
+For your test, confirm the service is Running, set ChargeSchedule:Sme:Enabled to true, and use the server’s local time. Restart the service after changing the schedule. A “Completed SME charge cycle” entry confirms the cycle returned without an error, but doesn’t prove calculations ran: the processor can skip work if that output was already recorded. As configured, the logs won’t tell you whether a particular calculation event or row was processed.
