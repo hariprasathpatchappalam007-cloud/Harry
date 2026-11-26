@@ -1,13 +1,7 @@
-This is a **connection-string typo**, not yet a SQL Server connectivity or certificate error. `Microsoft.Data.SqlClient` rejects the keyword `Trust ServerCertificate`; use **`TrustServerCertificate=True`** with no space in the keyword.
+Dear Sarath,
 
-For example, the connection string should use this format:
+I am not clear about the old and new queries you are referring to.
 
-```text
-Server=<server>;Database=<database>;User ID=<user>;Password=<password>;Encrypt=True;TrustServerCertificate=True;
-```
+Dear Sourabh,
 
-Update the value supplied as `ConnectionStrings:DibCharges` (or its environment-variable equivalent, `ConnectionStrings__DibCharges`) using your approved configuration/secret store. Don’t paste the real connection string or password here.
-
-The exception occurs at the first database check in `ChargeCycleProcessor.ProcessAsync`, before the SQL connection is opened. **This attempt did not proceed to SME data retrieval, charge calculation, or inserts.**
-
-After correcting the setting, restart the service so it reloads the connection string. The worker remembers a failed attempt for that date, so restarting is needed for another attempt; if the SME schedule time has already passed, it should retry on the next poll. Be aware that the corrected run can proceed into database processing. `TrustServerCertificate=True` skips certificate validation, so use it only where approved; production should use a trusted SQL Server certificate.
+If you are aware of the old and new queries being discussed, could you please share them with Sarath for clarity?
