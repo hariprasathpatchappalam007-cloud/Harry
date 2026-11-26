@@ -1,23 +1,10 @@
-Read 
-Completed with input: {
-  "path": "C:\\Users\\Abinaya\\source\\GITHub\\DIBcharges\\src\\DIBCharges.Worker\\ChargeProcessingOptions.cs"
-}
+This is a connection-string typo, not yet a SQL Server connectivity or certificate error. Microsoft.Data.SqlClient rejects the keyword Trust ServerCertificate; use TrustServerCertificate=True with no space in the keyword.
 
-The log shows that the service **started and the SME schedule fired**, so the 1053 start problem appears resolved. The cycle then stopped immediately because required output paths and the SME file prefix are blank.
+For example, the connection string should use this format:
 
-`GetPaths` checks those settings before making any repository calls, so **this attempt did not reach database lookup or charge calculation**. See `ChargeProcessingOptions.cs`.
 
-In `C:\DIBCharges\appsettings.json`, configure these `ChargeProcessing` settings with approved test locations:
+Update the value supplied as ConnectionStrings:DibCharges (or its environment-variable equivalent, ConnectionStrings__DibCharges) using your approved configuration/secret store. Don’t paste the real connection string or password here.
 
-```json
-"ChargeProcessing": {
-  "SmeOutputDirectory": "C:\\DIBCharges\\test\\sme-output",
-  "SmeArchiveDirectory": "C:\\DIBCharges\\test\\sme-archive",
-  "SplitDirectory": "C:\\DIBCharges\\test\\split",
-  "SmeFilePrefix": "SME_TEST_"
-}
-```
+The exception occurs at the first database check in ChargeCycleProcessor.ProcessAsync, before the SQL connection is opened. This attempt did not proceed to SME data retrieval, charge calculation, or inserts.
 
-Merge these into the existing `ChargeProcessing` section—don’t replace its other settings. Create the directories and grant the service account permission to write there.
-
-**Keep `ChargeSchedule:Sme:Enabled` false while configuring and checking the paths.** Once you enable it and restart the service, a schedule time that has already passed can cause the cycle to run on the next poll. The cycle may then read database data, calculate/insert charges, and generate files. Enable it only when those effects are intended.
+After correcting the setting, restart the service so it reloads the connection string. The worker remembers a failed attempt for that date, so restarting is needed for another attempt; if the SME schedule time has already passed, it should retry on the next poll. Be aware that the corrected run can proceed into database processing. TrustServerCertificate=True skips certificate validation, so use it only where approved; production should use a trusted SQL Server certificate.
