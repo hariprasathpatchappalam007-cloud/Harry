@@ -1,7 +1,9 @@
-Dear Sarath,
+Edit 
 
-I am not clear about the old and new queries you are referring to.
+The regular filename test now uses `BBCHG_` and checks the monthly main, archive, split, and ledger names; the SME test still checks the daily date-based equivalents. I’ll rerun the Worker tests for both conventions.
 
-Dear Sourabh,
+Ran terminal command: dotnet test .\tests\DIBCharges.Worker.Tests\DIBCharges.Worker.Tests.csproj --configuration Release
 
-If you are aware of the old and new queries being discussed, could you please share them with Sarath for clarity?
+The attachment confirms regular/business-banking files use the **monthly** suffix. The existing code already produces `BBCHG_102026.txt` when `ChargeProcessing:RegularFilePrefix` is set to `BBCHG_`; SME files remain daily, e.g. `SMCHG_151126.txt`.
+
+I updated the regression test and `deployment guide` to use the exact regular filename example. Worker tests pass: **8 passed**. No runtime code change or republish was needed; ensure the installed `appsettings.json` has `RegularFilePrefix` set to `BBCHG_`.
